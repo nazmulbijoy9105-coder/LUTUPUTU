@@ -24,7 +24,9 @@ import {
   Send,
   Brain,
   Download,
-  ChevronDown
+  ChevronDown,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
@@ -43,6 +45,12 @@ export default function App() {
   // State
   const [selectedReligion, setSelectedReligion] = useState<Religion>('muslim');
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>('scen-001');
+  const [isJurisdictionSelected, setIsJurisdictionSelected] = useState<boolean>(false);
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
+  const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState<string>('');
+  const [adminError, setAdminError] = useState<string>('');
+  const [showStatutes, setShowStatutes] = useState<boolean>(false);
 
   // Input fields for the evaluation workspace
   const [question, setQuestion] = useState<string>('');
@@ -113,6 +121,7 @@ export default function App() {
       // Load into workspace state!
       setSelectedReligion(data.religion);
       setSelectedScenarioId('custom'); // to indicate custom/ai-loaded
+      setIsJurisdictionSelected(true);
       
       // Update inputs
       setQuestion(data.question || '');
@@ -157,6 +166,19 @@ export default function App() {
       setEscalateReason('');
     }
   }, [selectedReligion]);
+
+  const handleAdminVerify = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const normalized = adminPasswordInput.trim().toLowerCase();
+    if (normalized === 'lutuputu' || normalized === 'admin' || normalized === 'admin123') {
+      setIsAdminMode(true);
+      setShowAdminModal(false);
+      setAdminPasswordInput('');
+      setAdminError('');
+    } else {
+      setAdminError('Incorrect chambers authentication key. Access denied.');
+    }
+  };
 
   // Load selected scenario
   const handleScenarioChange = (id: string) => {
@@ -687,6 +709,34 @@ export default function App() {
               <p className="text-[10px] uppercase text-slate-400 tracking-wider font-mono">Active Jurisdiction</p>
               <p className="text-sm font-semibold uppercase text-slate-800 font-serif italic">Dhaka / BD Personal Law</p>
             </div>
+
+            <div className="flex items-center gap-2 border-l border-slate-200 pl-6">
+              {isAdminMode ? (
+                <button
+                  type="button"
+                  onClick={() => setIsAdminMode(false)}
+                  className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 px-3 py-2 rounded-lg text-xs font-bold font-sans transition-all cursor-pointer select-none"
+                  title="Chambers Admin Mode is Active. Click to lock and switch to Client View."
+                >
+                  <Unlock className="w-3.5 h-3.5" />
+                  <span>Admin Active</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdminError('');
+                    setAdminPasswordInput('');
+                    setShowAdminModal(true);
+                  }}
+                  className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-bold font-sans transition-all cursor-pointer select-none border border-slate-200"
+                  title="Authenticates chambers staff to access scoring metrics, rule formulas and evaluation boards."
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Chambers Admin</span>
+                </button>
+              )}
+            </div>
             
             <div className="flex items-center gap-3 border-l border-slate-200 pl-6 select-none">
               <div className="text-right leading-tight">
@@ -732,242 +782,330 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex gap-4 mt-6 md:mt-0">
-            <div className="p-5 bg-white rounded-lg border border-slate-200 text-center min-w-[120px] shadow-sm">
-              <p className="text-[10px] uppercase text-slate-400 tracking-widest font-mono">Metric Score</p>
-              <p className={`text-3xl font-mono font-bold mt-1 ${isILRMFActive ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {isILRMFActive ? (evaluationResult?.verdict?.score ?? '0.0') : '0.0 (N/A)'}
-              </p>
-            </div>
-            <div className="p-5 bg-white rounded-lg border border-slate-200 text-center min-w-[120px] shadow-sm">
-              <p className="text-[10px] uppercase text-slate-400 tracking-widest font-mono">Verdict Band</p>
-              <p className={`text-2xl font-serif italic mt-1.5 capitalize ${isILRMFActive ? 'text-slate-800' : 'text-rose-700'}`}>
-                {isILRMFActive ? (evaluationResult?.verdict?.verdict?.toLowerCase() ?? 'none') : 'unverified'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Bangladesh Family Law Consultation Stage */}
-        <div className="bg-white border border-emerald-500/20 rounded-xl p-6 sm:p-8 mb-8 shadow-sm relative overflow-hidden">
-          <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-500/[0.02] rounded-full blur-3xl pointer-events-none"></div>
-          
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-50 border border-emerald-200/50 rounded-lg flex items-center justify-center text-emerald-600">
-                <Sparkles className="w-5 h-5 animate-pulse" />
+          {isAdminMode ? (
+            <div className="flex gap-4 mt-6 md:mt-0">
+              <div className="p-5 bg-white rounded-lg border border-slate-200 text-center min-w-[120px] shadow-sm">
+                <p className="text-[10px] uppercase text-slate-400 tracking-widest font-mono">Metric Score</p>
+                <p className={`text-3xl font-mono font-bold mt-1 ${isILRMFActive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {isILRMFActive ? (evaluationResult?.verdict?.score ?? '0.0') : '0.0 (N/A)'}
+                </p>
               </div>
-              <div>
-                <h3 className="font-serif italic text-slate-900 text-lg tracking-wide flex items-center gap-2">
-                  AI Consultation Stage
-                  <span className="text-[10px] font-mono bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2 py-0.5 rounded uppercase font-bold tracking-widest normal-case">
-                    ILRMF Structured
-                  </span>
-                </h3>
-                <p className="text-slate-600 text-xs mt-0.5 leading-relaxed">
-                  Input details of any domestic situation. The system structures the facts conforming strictly to the formal ILRMF formulation, audited in real-time by the deterministic engine below.
+              <div className="p-5 bg-white rounded-lg border border-slate-200 text-center min-w-[120px] shadow-sm">
+                <p className="text-[10px] uppercase text-slate-400 tracking-widest font-mono">Verdict Band</p>
+                <p className={`text-2xl font-serif italic mt-1.5 capitalize ${isILRMFActive ? 'text-slate-800' : 'text-rose-700'}`}>
+                  {isILRMFActive ? (evaluationResult?.verdict?.verdict?.toLowerCase() ?? 'none') : 'unverified'}
                 </p>
               </div>
             </div>
+          ) : (
+            <div className="mt-6 md:mt-0 flex items-center gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm min-w-[220px]">
+              <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 shrink-0 border border-emerald-100">
+                <Scale className="w-5 h-5" />
+              </div>
+              <div className="text-left">
+                <p className="text-[9px] uppercase tracking-wider text-slate-400 font-mono font-bold leading-none mb-1">Authorized Seal</p>
+                <p className="text-xs font-serif italic text-slate-800 font-bold leading-tight">Md. Nazmul Islam Chambers</p>
+                <p className="text-[9px] text-slate-500 font-mono font-semibold">Supreme Court of Bangladesh</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* STEP 1: Select Religious Jurisdiction */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-mono text-xs font-bold flex items-center justify-center">1</span>
+            <h3 className="font-serif italic text-slate-900 text-lg tracking-wide">
+              Choose Personal Law Religious Jurisdiction
+            </h3>
           </div>
-
-          <div className="mt-6 space-y-4">
-            <div>
-              <label className="block text-[10px] uppercase tracking-widest text-slate-400 mb-2.5 font-mono">
-                Describe the domestic situation in detail (names, dates, religion, dispute facts)
-              </label>
-              <textarea
-                value={domesticSituation}
-                onChange={(e) => setDomesticSituation(e.target.value)}
-                placeholder="E.g., I married my husband in 2021 under Muslim law. Last month, he married another wife in Dhaka without my consent. Now he is refusing to pay my prompt dower (mahr) and threatening to divorce me over the phone..."
-                rows={4}
-                className="w-full text-xs text-slate-900 bg-slate-50/50 p-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 placeholder-slate-400 font-sans leading-relaxed transition-all"
-                disabled={isConsulting}
-              />
-            </div>
-
-            {/* Suggested Templates */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider mr-1">Quick Scenarios:</span>
-              <button
-                type="button"
-                onClick={() => setDomesticSituation("I got married under Muslim law and my husband has recently married another woman without taking any prior written permission from the arbitration council or me. What are my options regarding denmahr and divorce?")}
-                className="text-[10px] bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg transition-all"
-                disabled={isConsulting}
-              >
-                Muslim Polygamy Dispute
-              </button>
-              <button
-                type="button"
-                onClick={() => setDomesticSituation("I am a Hindu wife living in Chittagong. My husband behaves with extreme cruelty and has deserted me to marry another wife. Is there a way for me to live separately and claim monthly maintenance under Bangladesh Hindu law?")}
-                className="text-[10px] bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg transition-all"
-                disabled={isConsulting}
-              >
-                Hindu Separation Claim
-              </button>
-              <button
-                type="button"
-                onClick={() => setDomesticSituation("I married under Christian law. My husband has converted to another religion and deserted our family for more than two years without providing any support. How can I seek legal dissolution of our marriage?")}
-                className="text-[10px] bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg transition-all"
-                disabled={isConsulting}
-              >
-                Christian Divorce Case
-              </button>
-            </div>
-
-            {/* Error and Success states */}
-            <AnimatePresence mode="wait">
-              {consultationError && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-lg text-xs flex items-start gap-2.5"
-                >
-                  <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold">Consultation Error</p>
-                    <p className="text-[11px] opacity-90 mt-0.5">{consultationError}</p>
-                  </div>
-                </motion.div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Muslim Card */}
+            <div 
+              onClick={() => {
+                setSelectedReligion('muslim');
+                setIsJurisdictionSelected(true);
+              }}
+              className={`p-6 rounded-xl border-2 transition-all cursor-pointer bg-white relative overflow-hidden flex flex-col justify-between ${
+                isJurisdictionSelected && selectedReligion === 'muslim'
+                ? 'border-emerald-500 shadow-md ring-1 ring-emerald-500/20'
+                : 'border-slate-200 hover:border-slate-300 shadow-sm'
+              }`}
+            >
+              {isJurisdictionSelected && selectedReligion === 'muslim' && (
+                <div className="absolute right-0 top-0 bg-emerald-500 text-white text-[9px] font-mono uppercase tracking-widest px-3 py-1 rounded-bl font-bold shadow-sm">
+                  ✓ Selected
+                </div>
               )}
-
-              {consultationSuccess && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-lg text-xs flex items-start gap-2.5"
-                >
-                  <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold">ILRMF Formulation Drafted</p>
-                    <p className="text-[11px] opacity-90 mt-0.5">
-                      The AI structured the response perfectly and populated the workspace below. The local deterministic engine has initiated a real-time logical and factual audit. Scroll down to review.
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-[10px] text-slate-400 font-mono">
-                * Conforms to MFLO 1961, DMMA 1939, and related personal statutes.
-              </span>
-
-              <button
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 font-mono">Islam / Sunni & Shia</span>
+                <h4 className="font-serif text-slate-900 text-base font-bold mt-1.5 mb-1">Muslim Family Law</h4>
+                <p className="text-[10px] text-slate-400 font-mono mb-3 uppercase tracking-wider">MFLO 1961, DMMA 1939, GWA 1890</p>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Covers talaq notices, dower validation, polygamy permissions, separate wives' maintenance, and Sunni/Shia inheritance distribution.
+                </p>
+              </div>
+              <button 
                 type="button"
-                onClick={handleConsultation}
-                disabled={isConsulting || !domesticSituation.trim()}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-xs transition-all duration-200 ${
-                  isConsulting 
-                  ? 'bg-emerald-50 border border-emerald-200 text-emerald-600 cursor-not-allowed' 
-                  : !domesticSituation.trim()
-                  ? 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-200 font-bold cursor-pointer'
+                className={`w-full mt-5 py-2 px-4 rounded-lg font-bold text-xs transition-colors ${
+                  isJurisdictionSelected && selectedReligion === 'muslim'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
                 }`}
               >
-                {isConsulting ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" />
-                    <span>{consultingStep}</span>
-                  </>
-                ) : (
-                  <>
-                    <Brain className="w-4 h-4" />
-                    <span>Structure ILRMF Legal Response</span>
-                  </>
-                )}
+                {isJurisdictionSelected && selectedReligion === 'muslim' ? 'Muslim Domain Active' : 'Select Muslim Law'}
+              </button>
+            </div>
+
+            {/* Hindu Card */}
+            <div 
+              onClick={() => {
+                setSelectedReligion('hindu');
+                setIsJurisdictionSelected(true);
+              }}
+              className={`p-6 rounded-xl border-2 transition-all cursor-pointer bg-white relative overflow-hidden flex flex-col justify-between ${
+                isJurisdictionSelected && selectedReligion === 'hindu'
+                ? 'border-amber-500 shadow-md ring-1 ring-amber-500/20'
+                : 'border-slate-200 hover:border-slate-300 shadow-sm'
+              }`}
+            >
+              {isJurisdictionSelected && selectedReligion === 'hindu' && (
+                <div className="absolute right-0 top-0 bg-amber-500 text-white text-[9px] font-mono uppercase tracking-widest px-3 py-1 rounded-bl font-bold shadow-sm">
+                  ✓ Selected
+                </div>
+              )}
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 font-mono">Hindu Shastric & Statutes</span>
+                <h4 className="font-serif text-slate-900 text-base font-bold mt-1.5 mb-1">Hindu Family Law</h4>
+                <p className="text-[10px] text-slate-400 font-mono mb-3 uppercase tracking-wider">Separation Act 1946, Customary Precedents</p>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Covers judicial separate residence claims, husband's desertion & cruelty maintenance, child custody, and Shastric dower claims.
+                </p>
+              </div>
+              <button 
+                type="button"
+                className={`w-full mt-5 py-2 px-4 rounded-lg font-bold text-xs transition-colors ${
+                  isJurisdictionSelected && selectedReligion === 'hindu'
+                  ? 'bg-amber-600 text-white'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
+                }`}
+              >
+                {isJurisdictionSelected && selectedReligion === 'hindu' ? 'Hindu Domain Active' : 'Select Hindu Law'}
+              </button>
+            </div>
+
+            {/* Christian Card */}
+            <div 
+              onClick={() => {
+                setSelectedReligion('christian');
+                setIsJurisdictionSelected(true);
+              }}
+              className={`p-6 rounded-xl border-2 transition-all cursor-pointer bg-white relative overflow-hidden flex flex-col justify-between ${
+                isJurisdictionSelected && selectedReligion === 'christian'
+                ? 'border-indigo-500 shadow-md ring-1 ring-indigo-500/20'
+                : 'border-slate-200 hover:border-slate-300 shadow-sm'
+              }`}
+            >
+              {isJurisdictionSelected && selectedReligion === 'christian' && (
+                <div className="absolute right-0 top-0 bg-indigo-500 text-white text-[9px] font-mono uppercase tracking-widest px-3 py-1 rounded-bl font-bold shadow-sm">
+                  ✓ Selected
+                </div>
+              )}
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 font-mono">Christian Codified Statutes</span>
+                <h4 className="font-serif text-slate-900 text-base font-bold mt-1.5 mb-1">Christian Family Law</h4>
+                <p className="text-[10px] text-slate-400 font-mono mb-3 uppercase tracking-wider">Divorce Act 1869, Christian Marriage Act 1872</p>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Covers dissolution of marriage on desertion/apostasy, separate support, child guardianship, and statutory dower provisions.
+                </p>
+              </div>
+              <button 
+                type="button"
+                className={`w-full mt-5 py-2 px-4 rounded-lg font-bold text-xs transition-colors ${
+                  isJurisdictionSelected && selectedReligion === 'christian'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
+                }`}
+              >
+                {isJurisdictionSelected && selectedReligion === 'christian' ? 'Christian Domain Active' : 'Select Christian Law'}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Global Controls: Scenario Pick and Religion Select */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
-          
-          {/* Active Religions - Styled Sidebar Navigation Area */}
-          <div className="lg:col-span-4 bg-white rounded-xl p-6 border border-slate-200 flex flex-col justify-between shadow-sm">
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-4 font-mono">Religious Jurisdiction</p>
-              <nav className="space-y-1.5">
-                {religions.map((rel) => {
-                  const isActive = selectedReligion === rel;
-                  return (
-                    <button
-                      key={rel}
-                      onClick={() => setSelectedReligion(rel)}
-                      className={`w-full flex items-center justify-between p-3.5 transition-all duration-200 text-left border-l-2 text-xs font-semibold cursor-pointer ${
-                        isActive
-                        ? 'bg-emerald-50/50 border-emerald-500 text-slate-900'
-                        : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-                      }`}
-                    >
-                      <span className="capitalize">{rel} Family Law</span>
-                      {isActive && (
-                        <span className="text-[9px] font-mono bg-emerald-100 text-emerald-800 border border-emerald-200/50 px-1.5 py-0.5 rounded tracking-widest uppercase font-bold">
-                          ACTIVE
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-            <div className="mt-8 pt-4 border-t border-slate-100 text-[11px] text-slate-400 leading-relaxed">
-              Family laws in Bangladesh are highly pluralistic, governed strictly by personal laws associated with each individual's religious community denomination.
-            </div>
+        {/* STEP 2: Describe Dispute Facts for AI Consultation */}
+        <div className="relative mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-mono text-xs font-bold flex items-center justify-center">2</span>
+            <h3 className="font-serif italic text-slate-900 text-lg tracking-wide">
+              Describe Dispute & Domestic Facts for Consultation
+            </h3>
           </div>
 
-          {/* Preconfigured Case Scenarios */}
-          <div className="lg:col-span-8 bg-white rounded-xl p-6 border border-slate-200 flex flex-col justify-between shadow-sm">
-            <div>
-              <label className="block text-[10px] uppercase tracking-widest text-slate-400 mb-4 font-mono">
-                Select Preconfigured Family Dispute Case Scenario
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {scenarios.map((scen) => {
-                  const isSelected = selectedScenarioId === scen.id;
-                  return (
+          {!isJurisdictionSelected ? (
+            <div className="bg-slate-50 rounded-xl p-8 border-2 border-dashed border-slate-300 text-center flex flex-col items-center justify-center gap-3 py-14">
+              <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-400">
+                <Lock className="w-6 h-6" />
+              </div>
+              <h4 className="font-serif text-slate-800 text-base font-bold">Consultation Portal Locked</h4>
+              <p className="text-xs text-slate-500 max-w-md leading-relaxed">
+                Supreme Court legal guidelines require selecting your religious personal law jurisdiction in <strong className="text-slate-700">Step 1</strong> above before the professional AI Consultation engine can be initialized.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white border border-emerald-500/20 rounded-xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
+              <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-500/[0.02] rounded-full blur-3xl pointer-events-none"></div>
+              
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-50 border border-emerald-200/50 rounded-lg flex items-center justify-center text-emerald-600">
+                    <Sparkles className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif italic text-slate-900 text-lg tracking-wide flex items-center gap-2">
+                      Active AI Legal Consultant — <span className="capitalize">{selectedReligion}</span> Personal Law
+                    </h3>
+                    <p className="text-slate-600 text-xs mt-0.5 leading-relaxed">
+                      Chambers automated advisor. Describe your domestic facts to structure them strictly under reproducible, non-probabilistic rule frameworks.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest text-slate-400 mb-2.5 font-mono">
+                    Describe domestic scenario in detail (names, dates, marriage location, dispute details)
+                  </label>
+                  <textarea
+                    value={domesticSituation}
+                    onChange={(e) => setDomesticSituation(e.target.value)}
+                    placeholder="E.g., I married my partner in 2021. Recently, a major family dispute arose over separate maintenance and children custody..."
+                    rows={4}
+                    className="w-full text-xs text-slate-900 bg-slate-50/50 p-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 placeholder-slate-400 font-sans leading-relaxed transition-all"
+                    disabled={isConsulting}
+                  />
+                </div>
+
+                {/* Filtered suggested scenarios buttons inside step 2 card */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider mr-1">Suggested Template Cases:</span>
+                  {scenarios.filter(scen => scen.religion === selectedReligion).map((scen) => (
                     <button
                       key={scen.id}
-                      onClick={() => handleScenarioChange(scen.id)}
-                      className={`text-left p-4 rounded-lg border transition-all flex flex-col justify-between h-full cursor-pointer ${
-                        isSelected 
-                        ? 'border-emerald-500 bg-emerald-50/30 shadow-sm' 
-                        : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
-                      }`}
+                      type="button"
+                      onClick={() => {
+                        setDomesticSituation(scen.qaEntry.question);
+                        setSelectedScenarioId(scen.id);
+                        loadScenario(scen);
+                        setConsultationSuccess(true);
+                      }}
+                      className="text-[10px] bg-emerald-50/50 hover:bg-emerald-50 border border-emerald-200/50 text-emerald-800 px-3 py-1.5 rounded-lg transition-all font-semibold font-sans cursor-pointer flex items-center gap-1"
+                      disabled={isConsulting}
                     >
-                      <div>
-                        <span className={`text-[9px] font-bold uppercase tracking-wider block mb-1 font-mono ${
-                          isSelected ? 'text-emerald-700' : 'text-slate-400'
-                        }`}>
-                          {scen.religion.toUpperCase()} Law Area
-                        </span>
-                        <span className="font-serif text-sm text-slate-900 block leading-snug line-clamp-1">{scen.title}</span>
-                      </div>
-                      <span className="text-xs text-slate-500 mt-3 line-clamp-2 leading-relaxed">{scen.description}</span>
+                      <FileText className="w-3 h-3 text-emerald-600" />
+                      <span>{scen.title}</span>
                     </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="mt-4 flex items-center justify-between text-[11px] text-slate-400 font-mono pt-4 border-t border-slate-100">
-              <span>* Selecting a scenario pre-populates the case workspace below.</span>
-              <div className="flex gap-4">
-                <span>Total Statutes: 412</span>
-                <span>Certainty: 100%</span>
-              </div>
-            </div>
-          </div>
+                  ))}
+                </div>
 
+                {/* Error and Success states */}
+                <AnimatePresence mode="wait">
+                  {consultationError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-lg text-xs flex items-start gap-2.5"
+                    >
+                      <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold">Consultation Error</p>
+                        <p className="text-[11px] opacity-90 mt-0.5">{consultationError}</p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {consultationSuccess && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-lg text-xs flex items-start gap-2.5"
+                    >
+                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold">ILRMF Formulation Drafted</p>
+                        <p className="text-[11px] opacity-90 mt-0.5">
+                          The AI structured the response perfectly. The local deterministic engine has initiated a real-time logical and factual audit. Review your official structured legal briefing below.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    * Guided by the legal codifications of Advocate Md. Nazmul Islam.
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={handleConsultation}
+                    disabled={isConsulting || !domesticSituation.trim()}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-xs transition-all duration-200 ${
+                      isConsulting 
+                      ? 'bg-emerald-50 border border-emerald-200 text-emerald-600 cursor-not-allowed' 
+                      : !domesticSituation.trim()
+                      ? 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed'
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-200 font-bold cursor-pointer'
+                    }`}
+                  >
+                    {isConsulting ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" />
+                        <span>{consultingStep}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="w-4 h-4" />
+                        <span>Structure ILRMF Legal Response</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Workspace Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* LEFT: Legal Rules Directory (4 Cols) */}
-          <section className="lg:col-span-4 flex flex-col gap-6" id="section-rules-directory">
+        {/* Workspace Grid / Output Section */}
+        {isAdminMode ? (
+          <>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm mb-6 animate-in fade-in duration-200">
+              <div className="flex items-center gap-2.5">
+                <Scale className="w-5 h-5 text-indigo-600 shrink-0" />
+                <div>
+                  <h4 className="font-serif italic font-bold text-slate-900 text-sm">Chambers Auditing Workspace (Admin View)</h4>
+                  <p className="text-[10px] text-slate-500 font-mono">Real-time local score compilation & deterministic formula testing</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowStatutes(!showStatutes)}
+                className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-bold font-sans transition-all shadow-sm cursor-pointer select-none border border-indigo-700 hover:scale-[1.01]"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>{showStatutes ? 'Hide Statutory Directory' : 'Show Statutory Directory'}</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              
+              {/* LEFT: Legal Rules Directory (4 Cols) */}
+              {showStatutes && (
+                <section className="lg:col-span-4 flex flex-col gap-6 animate-in fade-in slide-in-from-left-2 duration-150" id="section-rules-directory">
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="bg-slate-50 p-4 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1048,9 +1186,10 @@ export default function App() {
               </ul>
             </div>
           </section>
+          )}
 
-          {/* MIDDLE: Evaluation Interactive Workspace (4 Cols) */}
-          <section className="lg:col-span-4 flex flex-col gap-6" id="section-interactive-workspace">
+          {/* MIDDLE: Evaluation Interactive Workspace (Dynamic Spans) */}
+          <section className={showStatutes ? 'lg:col-span-4 flex flex-col gap-6' : 'lg:col-span-6 flex flex-col gap-6'} id="section-interactive-workspace">
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-5">
               <div className="flex items-center gap-2.5 pb-4 border-b border-slate-200">
                 <PenTool className="w-5 h-5 text-emerald-600" />
@@ -1244,8 +1383,8 @@ export default function App() {
             </div>
           </section>
 
-          {/* RIGHT: Metric Summary Panel (4 Cols) */}
-          <section className="lg:col-span-4 flex flex-col gap-6" id="section-metrics-verdict">
+          {/* RIGHT: Metric Summary Panel (Dynamic Spans) */}
+          <section className={showStatutes ? 'lg:col-span-4 flex flex-col gap-6' : 'lg:col-span-6 flex flex-col gap-6'} id="section-metrics-verdict">
             
             {/* Realtime Verdict Summary */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-6">
@@ -1632,6 +1771,180 @@ export default function App() {
           </section>
 
         </div>
+        </>
+        ) : (
+          /* STEP 3: Official Client Structured Legal Guidance & Decision Briefing */
+          <div className="mt-8 animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-mono text-xs font-bold flex items-center justify-center">3</span>
+              <h3 className="font-serif italic text-slate-900 text-lg tracking-wide">
+                Official Legal Guidance & Decision Briefing
+              </h3>
+            </div>
+
+            {!issue && !conclusionText ? (
+              <div className="bg-slate-50 rounded-xl p-8 border-2 border-dashed border-slate-300 text-center flex flex-col items-center justify-center gap-3 py-14">
+                <div className="w-12 h-12 rounded-full bg-slate-250 flex items-center justify-center text-slate-400">
+                  <Scale className="w-6 h-6" />
+                </div>
+                <h4 className="font-serif text-slate-800 text-base font-bold">Waiting for Case Analysis</h4>
+                <p className="text-xs text-slate-500 max-w-md leading-relaxed">
+                  Describe your domestic facts in <strong className="text-slate-700">Step 2</strong> above and run the legal consultant engine to generate your official personal law briefing.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Majestic client briefing wrapper */}
+                <div className="bg-white border border-slate-200 shadow-md rounded-2xl p-6 sm:p-8 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600"></div>
+                  
+                  {/* Header of the Brief */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6">
+                    <div>
+                      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">Official Chambers Opinion</p>
+                      <h4 className="text-xl font-serif italic font-bold text-slate-900 mt-0.5">
+                        Personal Law Consultation & Decision Brief
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Prepared by Chambers of <span className="font-semibold text-slate-700">Md. Nazmul Islam Advocate</span>, Supreme Court of Bangladesh
+                      </p>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadPDF('hybrid')}
+                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-lg text-xs font-bold font-sans transition-all shadow-[0_4px_12px_rgba(16,185,129,0.15)] hover:shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] active:scale-[0.98] select-none cursor-pointer"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Download PDF Brief</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Case Particulars */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 border border-slate-200/60 rounded-xl p-4 mb-6 text-xs">
+                    <div>
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono font-bold block">Religious Jurisdiction</span>
+                      <span className="font-serif italic font-bold text-slate-800 capitalize mt-1 block">{selectedReligion} Family Law</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono font-bold block">Regulatory Authority</span>
+                      <span className="font-mono text-slate-800 mt-1 block">MFLO 1961 / BD High Court</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono font-bold block">Status</span>
+                      <span className={`inline-flex items-center gap-1.5 font-bold font-mono text-[10px] uppercase mt-1 px-2.5 py-0.5 rounded border ${
+                        escalate 
+                        ? 'bg-rose-50 text-rose-700 border-rose-200/60' 
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
+                      }`}>
+                        {escalate ? '⚠️ Immediate Advocacy Advised' : '✓ Normal Jurisdiction'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* The 4-Column IRAC Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    {/* ISSUE */}
+                    <div className="p-5 bg-white border border-slate-200/80 rounded-xl shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+                          <div className="w-7 h-7 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center font-bold text-xs font-serif italic border border-indigo-100">I</div>
+                          <h5 className="font-serif text-slate-900 font-bold text-sm">Issue Under Consideration</h5>
+                        </div>
+                        <p className="text-xs text-slate-600 leading-relaxed italic">"{issue}"</p>
+                      </div>
+                    </div>
+
+                    {/* RULE */}
+                    <div className="p-5 bg-white border border-slate-200/80 rounded-xl shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+                          <div className="w-7 h-7 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center font-bold text-xs font-serif italic border border-amber-100">R</div>
+                          <h5 className="font-serif text-slate-900 font-bold text-sm">Governing Personal Law & Rule</h5>
+                        </div>
+                        <p className="text-xs text-slate-600 leading-relaxed">{ruleText}</p>
+                      </div>
+                    </div>
+
+                    {/* APPLICATION */}
+                    <div className="p-5 bg-white border border-slate-200/80 rounded-xl shadow-sm flex flex-col justify-between md:col-span-2">
+                      <div>
+                        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+                          <div className="w-7 h-7 bg-teal-50 text-teal-600 rounded-lg flex items-center justify-center font-bold text-xs font-serif italic border border-teal-100">A</div>
+                          <h5 className="font-serif text-slate-900 font-bold text-sm">Case Evaluation & Application</h5>
+                        </div>
+                        <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">{applicationText}</p>
+                      </div>
+                    </div>
+
+                    {/* CONCLUSION */}
+                    <div className="p-5 bg-white border border-slate-200/80 rounded-xl shadow-sm flex flex-col justify-between md:col-span-2">
+                      <div>
+                        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+                          <div className="w-7 h-7 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center font-bold text-xs font-serif italic border border-emerald-100">C</div>
+                          <h5 className="font-serif text-slate-900 font-bold text-sm">Structured Conclusion & Legal Remedy</h5>
+                        </div>
+                        <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">{conclusionText}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Escalation Alert Box */}
+                  {escalate && (
+                    <div className="bg-rose-50 border border-rose-200 rounded-xl p-5 text-xs flex gap-3 mb-6">
+                      <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                      <div>
+                        <h6 className="font-bold text-rose-900 uppercase font-mono tracking-wider text-[10px] mb-1">Attorney Intervention Required</h6>
+                        <p className="text-rose-800 leading-relaxed">{escalateReason || 'This family law dispute contains specific, high-risk deviations requiring immediate attention by a practicing High Court advocate.'}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Collapsible Statutory Reference List inside Step 3 for client */}
+                  <div className="pt-4 border-t border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-mono tracking-wider uppercase font-bold">
+                        Interactive Statutory Reference List
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowStatutes(!setShowStatutes)}
+                        className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/60 hover:bg-indigo-100 px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1 select-none"
+                      >
+                        <BookOpen className="w-3.5 h-3.5" />
+                        <span>{showStatutes ? 'Hide Reference List' : 'View Reference List Options'}</span>
+                      </button>
+                    </div>
+
+                    {showStatutes && (
+                      <div className="mt-4 bg-slate-50 border border-slate-200/80 rounded-xl p-4 sm:p-5 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <p className="text-xs text-slate-500 leading-relaxed mb-4">
+                          The legal framework below governs personal status in the Bangladesh court system for <strong className="capitalize">{selectedReligion}</strong> jurisdiction:
+                        </p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
+                          {knowledgeData.rules.map((rule) => (
+                            <div key={rule.id} className="bg-white p-4 border border-slate-200 rounded-lg shadow-xs flex flex-col justify-between gap-2.5">
+                              <div>
+                                <div className="flex items-center justify-between gap-2 mb-1.5">
+                                  <span className="font-mono text-[9px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded">{rule.id}</span>
+                                  <span className="text-[9px] text-slate-400 font-mono">{rule.source}</span>
+                                </div>
+                                <h6 className="text-xs font-serif font-bold text-slate-900 leading-snug">{rule.title}</h6>
+                                <p className="text-[11px] text-slate-600 leading-relaxed mt-1 italic">"{rule.rule}"</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
       </main>
 
