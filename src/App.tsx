@@ -23,7 +23,8 @@ import {
   MessageSquare,
   Send,
   Brain,
-  Download
+  Download,
+  ChevronDown
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
@@ -59,6 +60,9 @@ export default function App() {
 
   // Result state
   const [evaluationResult, setEvaluationResult] = useState<any>(null);
+  const [isILRMFActive, setIsILRMFActive] = useState<boolean>(true);
+  const [isDownloadOpen, setIsDownloadOpen] = useState<boolean>(false);
+  const [isSidebarDownloadOpen, setIsSidebarDownloadOpen] = useState<boolean>(false);
 
   // Consultation Stage State
   const [domesticSituation, setDomesticSituation] = useState<string>('');
@@ -250,7 +254,7 @@ export default function App() {
     }
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = (type: 'irac' | 'ilrmf' | 'hybrid' = 'hybrid') => {
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -267,7 +271,16 @@ export default function App() {
       doc.setFontSize(8);
       doc.setTextColor(148, 163, 184); // slate-400
       doc.text('LUTUPUTU.COM | BANGLADESH PERSONAL FAMILY LAW ENGINE', margin, 10);
-      doc.text('DETERMINISTIC IRAC LEGAL AUDIT REPORT', 210 - margin, 10, { align: 'right' });
+      
+      let headerTitle = 'DETERMINISTIC LEGAL AUDIT REPORT';
+      if (type === 'irac') {
+        headerTitle = 'IRAC SOLE COMPLIANCE AUDIT REPORT';
+      } else if (type === 'ilrmf') {
+        headerTitle = 'ILRMF SOLE COMPLIANCE AUDIT REPORT';
+      } else if (type === 'hybrid') {
+        headerTitle = 'HYBRID IRAC-ILRMF COMPLIANCE AUDIT REPORT';
+      }
+      doc.text(headerTitle, 210 - margin, 10, { align: 'right' });
       doc.setDrawColor(226, 232, 240); // slate-200
       doc.setLineWidth(0.2);
       doc.line(margin, 12, 210 - margin, 12);
@@ -281,14 +294,14 @@ export default function App() {
       }
     };
 
-    const addSectionHeader = (title: string) => {
+    const addSectionHeader = (title: string, color: number[] = [16, 185, 129]) => {
       checkPageOverflow(15);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setTextColor(15, 23, 42); // slate-900
       doc.text(title.toUpperCase(), margin, y);
       y += 4;
-      doc.setDrawColor(16, 185, 129); // emerald-500
+      doc.setDrawColor(color[0], color[1], color[2]);
       doc.setLineWidth(0.8);
       doc.line(margin, y, margin + 25, y);
       y += 6;
@@ -326,66 +339,91 @@ export default function App() {
     // --- Page 1: Main Title & Cover ---
     drawPageHeader();
     
+    // Choose theme colors based on selected PDF option
+    let headerBg: number[] = [15, 23, 42];
+    let reportTitle = 'ILRMF LEGAL AUDIT REPORT';
+    let reportSubtitle = 'Deterministic Compliance & Legal Consultation Brief';
+    
+    if (type === 'irac') {
+      headerBg = [79, 70, 229]; // Indigo
+      reportTitle = 'IRAC SOLE COMPLIANCE AUDIT REPORT';
+      reportSubtitle = 'Issue, Rule, Application, and Conclusion Formulation';
+    } else if (type === 'ilrmf') {
+      headerBg = [13, 148, 136]; // Teal
+      reportTitle = 'ILRMF SOLE COMPLIANCE AUDIT REPORT';
+      reportSubtitle = 'Facts, Law, Argument, and Relief Specification (ILRMF)';
+    } else if (type === 'hybrid') {
+      headerBg = [4, 120, 87]; // Emerald
+      reportTitle = 'HYBRID IRAC-ILRMF UNIFIED AUDIT REPORT';
+      reportSubtitle = 'Dual-Framework System Integration and Compliance Verification';
+    }
+
     // Header block
     y = 20;
-    doc.setFillColor(15, 23, 42); // Dark slate bg
+    doc.setFillColor(headerBg[0], headerBg[1], headerBg[2]);
     doc.rect(margin, y, contentWidth, 35, 'F');
     
     // Header text
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text('ILRMF LEGAL AUDIT REPORT', margin + 8, y + 13);
+    doc.setFontSize(16);
+    doc.text(reportTitle, margin + 8, y + 13);
     
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(16, 185, 129); // emerald
-    doc.text('Deterministic Compliance & Legal Consultation Brief', margin + 8, y + 21);
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text(reportSubtitle, margin + 8, y + 21);
     
     doc.setFontSize(8);
-    doc.setTextColor(148, 163, 184); // slate-400
+    doc.setTextColor(203, 213, 225);
     doc.text(`Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()} (UTC)`, margin + 8, y + 28);
     y += 42;
 
     // Core Metrics Block
-    checkPageOverflow(40);
-    doc.setFillColor(248, 250, 252); // light slate gray bg
-    doc.setDrawColor(226, 232, 240); // border
-    doc.rect(margin, y, contentWidth, 32, 'FD');
-    
-    // Draw columns for Score and Verdict
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(71, 85, 105);
-    doc.text('OVERALL METRIC SCORE', margin + 10, y + 10);
-    doc.text('COMPLIANCE VERDICT', margin + 70, y + 10);
-    doc.text('JURISDICTION', margin + 130, y + 10);
-    
-    const overallScore = evaluationResult?.verdict?.score ?? '0.0';
-    const overallVerdict = evaluationResult?.verdict?.verdict ?? 'NONE';
-    
-    doc.setFontSize(22);
-    if (parseFloat(overallScore) >= 80) {
-      doc.setTextColor(16, 185, 129); // emerald
-    } else if (parseFloat(overallScore) >= 50) {
-      doc.setTextColor(245, 158, 11); // warning yellow
+    if (type !== 'irac') {
+      checkPageOverflow(40);
+      doc.setFillColor(248, 250, 252); // light slate gray bg
+      doc.setDrawColor(226, 232, 240); // border
+      doc.rect(margin, y, contentWidth, 32, 'FD');
+      
+      // Draw columns for Score and Verdict
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(71, 85, 105);
+      doc.text('OVERALL METRIC SCORE', margin + 10, y + 10);
+      doc.text('COMPLIANCE VERDICT', margin + 70, y + 10);
+      doc.text('JURISDICTION', margin + 130, y + 10);
+      
+      const overallScore = isILRMFActive ? (evaluationResult?.verdict?.score ?? '0.0') : '0.0';
+      const overallVerdict = isILRMFActive ? (evaluationResult?.verdict?.verdict ?? 'NONE') : 'UNVERIFIED';
+      
+      doc.setFontSize(22);
+      if (!isILRMFActive) {
+        doc.setTextColor(225, 29, 72); // rose red for unverified
+      } else if (parseFloat(overallScore) >= 80) {
+        doc.setTextColor(16, 185, 129); // emerald
+      } else if (parseFloat(overallScore) >= 50) {
+        doc.setTextColor(245, 158, 11); // warning yellow
+      } else {
+        doc.setTextColor(225, 29, 72); // rose red
+      }
+      doc.text(isILRMFActive ? `${overallScore} / 100` : '0 / 100 (N/A)', margin + 10, y + 22);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text(overallVerdict, margin + 70, y + 20);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`${selectedReligion.toUpperCase()} FAMILY LAW`, margin + 130, y + 20);
+      y += 38;
     } else {
-      doc.setTextColor(225, 29, 72); // rose red
+      y += 5;
     }
-    doc.text(`${overallScore} / 100`, margin + 10, y + 22);
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.text(overallVerdict, margin + 70, y + 20);
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(15, 23, 42);
-    doc.text(`${selectedReligion.toUpperCase()} FAMILY LAW`, margin + 130, y + 20);
-    y += 38;
 
     // Case Overview
-    addSectionHeader('Case Metadata & Overview');
+    addSectionHeader('Case Metadata & Overview', headerBg);
     addKeyValueRow('Religion Jurisdiction', `${selectedReligion.charAt(0).toUpperCase() + selectedReligion.slice(1)} Personal Family Law`);
     addKeyValueRow('Active Region/Country', 'Dhaka / Bangladesh statutory application');
     if (relatedRules.length > 0) {
@@ -397,8 +435,8 @@ export default function App() {
     }
     y += 5;
 
-    // Factual Query Details
-    addSectionHeader('Factual Dispute / Incident details');
+    // Factual Query Details (always show the background story)
+    addSectionHeader('Factual Dispute / Incident details', headerBg);
     if (domesticSituation) {
       addKeyValueRow('Client Situation details', domesticSituation, true);
     } else {
@@ -406,25 +444,43 @@ export default function App() {
     }
     y += 5;
 
-    // ILRMF Formulation Brief
-    addSectionHeader('ILRMF Legal formulation (IRAC)');
-    addKeyValueRow('Issue Statement', issue || 'Not specified', true);
-    addKeyValueRow('Applicable Rule & Citation', ruleText || 'Not specified', true);
-    addKeyValueRow('Logic Application', applicationText || 'Not specified', true);
-    addKeyValueRow('Legal Conclusion', conclusionText || 'Not specified', true);
-    y += 5;
+    // 1. IRAC Section
+    if (type === 'irac' || type === 'hybrid') {
+      addSectionHeader('IRAC Legal formulation', [79, 70, 229]);
+      addKeyValueRow('Issue Statement', issue || 'Not specified', true);
+      addKeyValueRow('Applicable Rule & Citation', ruleText || 'Not specified', true);
+      addKeyValueRow('Logic Application', applicationText || 'Not specified', true);
+      addKeyValueRow('Legal Conclusion', conclusionText || 'Not specified', true);
+      y += 5;
+    }
+
+    // 2. ILRMF Section (FACTS, LAW, ARGUMENT, RELIEF)
+    if (type === 'ilrmf' || type === 'hybrid') {
+      addSectionHeader('ILRMF Legal formulation (Facts-Law-Argument-Relief)', [13, 148, 136]);
+      addKeyValueRow('FACTS (Factual context)', domesticSituation || question || 'Not specified', true);
+      addKeyValueRow('LAW (Statutory provisions)', ruleText || 'Not specified', true);
+      addKeyValueRow('ARGUMENT (Logical application)', applicationText || 'Not specified', true);
+      addKeyValueRow('RELIEF (Sought remedies/concl.)', conclusionText || 'Not specified', true);
+      y += 5;
+    }
 
     // Detailed Audit Score breakdown
-    if (evaluationResult) {
-      addSectionHeader('Deterministic Audit Breakdown');
-      addKeyValueRow('Fact Specificity Score (20% weight)', `${evaluationResult.factCheck?.score ?? 0}/100 - ${evaluationResult.factCheck?.note ?? ''}`);
-      addKeyValueRow('Statutory Alignment (30% weight)', `${evaluationResult.lawMatch?.score ?? 0}/100 - ${evaluationResult.lawMatch?.note ?? ''}`);
-      addKeyValueRow('Reasoning Path Audit (50% weight)', `${evaluationResult.audit?.logicScore ?? 0}/100 - ${evaluationResult.audit?.note ?? ''}`);
+    if (evaluationResult && type !== 'irac') {
+      addSectionHeader(isILRMFActive ? 'Deterministic Audit Breakdown' : 'Traditional Non-Audited Metrics', headerBg);
+      if (isILRMFActive) {
+        addKeyValueRow('Fact Specificity Score (20% weight)', `${evaluationResult.factCheck?.score ?? 0}/100 - ${evaluationResult.factCheck?.note ?? ''}`);
+        addKeyValueRow('Statutory Alignment (30% weight)', `${evaluationResult.lawMatch?.score ?? 0}/100 - ${evaluationResult.lawMatch?.note ?? ''}`);
+        addKeyValueRow('Reasoning Path Audit (50% weight)', `${evaluationResult.audit?.logicScore ?? 0}/100 - ${evaluationResult.audit?.note ?? ''}`);
+      } else {
+        addKeyValueRow('Fact Specificity Score (20% weight)', '0/100 (Unverified) - No factual entity boundaries checked.');
+        addKeyValueRow('Statutory Alignment (30% weight)', '0/100 (Unverified) - No physical statutory mapping query executed.');
+        addKeyValueRow('Reasoning Path Audit (50% weight)', '0/100 (Unverified) - No logical connectors or rule mapping audited.');
+      }
       
       y += 4;
       
       // Add logic steps / compliance
-      const steps = evaluationResult.audit?.steps || [];
+      const steps = isILRMFActive ? (evaluationResult.audit?.steps || []) : [];
       if (steps.length > 0) {
         checkPageOverflow(20);
         doc.setFont('helvetica', 'bold');
@@ -448,19 +504,43 @@ export default function App() {
           doc.text(stepLines, margin + 4, y);
           y += needed;
         });
+      } else if (!isILRMFActive) {
+        // Show unverified placeholder for steps
+        checkPageOverflow(20);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(220, 38, 38); // red
+        doc.text('REASONING PATH COMPLIANCE (UNAUDITED)', margin, y);
+        y += 6;
+ 
+        const warningLines = doc.splitTextToSize('WARNING: This output has not been run through the ILRMF deterministic checker. Individual IRAC components have not been audited for structural integrity, logical connectors, or citation validity. Severe hallucination risk.', contentWidth - 10);
+        const needed = warningLines.length * 5 + 4;
+        checkPageOverflow(needed);
+        doc.setFillColor(254, 242, 242); // soft red bg
+        doc.setDrawColor(254, 202, 202); // red border
+        doc.rect(margin, y - 4, contentWidth, needed - 1, 'FD');
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(8);
+        doc.setTextColor(153, 27, 27);
+        doc.text(warningLines, margin + 4, y);
+        y += needed;
       }
-
+ 
       // Show identified gaps if any
-      const gaps = evaluationResult.audit?.gaps || [];
+      const gaps = isILRMFActive ? (evaluationResult.audit?.gaps || []) : [
+        { type: 'HALLUCINATION_RISK', location: 'global', description: 'Traditional generative systems operate purely on token probability, creating false dower procedures.' },
+        { type: 'LOGICAL_LEAP', location: 'application', description: 'Reasoning transitions are not checked for valid connectors, leaving gaps and fallacies unflagged.' },
+        { type: 'STATUTORY_EXCLUSION', location: 'rule', description: 'No physical mapping to Bangladesh personal law databases exists, making citations unverified.' }
+      ];
       if (gaps.length > 0) {
         y += 4;
         checkPageOverflow(15);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
         doc.setTextColor(225, 29, 72); // rose red
-        doc.text('IDENTIFIED LOGICAL HOLES & REGULATORY GAPS', margin, y);
+        doc.text(isILRMFActive ? 'IDENTIFIED LOGICAL HOLES & REGULATORY GAPS' : 'CRITICAL TRADITIONAL TRADING/AI SYSTEM VULNERABILITIES', margin, y);
         y += 6;
-
+ 
         gaps.forEach((gap: any) => {
           const gapLines = doc.splitTextToSize(`- ${gap.type} in ${gap.location}: ${gap.description}`, contentWidth);
           const needed = gapLines.length * 5 + 2;
@@ -473,14 +553,14 @@ export default function App() {
         });
       }
     }
-
+ 
     // Add Signature/verification block
     y += 10;
     checkPageOverflow(30);
     doc.setDrawColor(226, 232, 240);
     doc.line(margin, y, 210 - margin, y);
     y += 8;
-
+ 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(71, 85, 105);
@@ -488,12 +568,26 @@ export default function App() {
     y += 4;
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(148, 163, 184);
-    doc.text('This is a deterministic computational audit report compiled strictly under the Bangladesh Personal Law ILRMF Specification version 4.0.1.', margin, y);
+    if (type === 'irac') {
+      doc.text('This is a structured IRAC legal formulation report compiled under Bangladesh Personal Law.', margin, y);
+      y += 4;
+      doc.text('This document contains the Issue, Rule, Application, and Conclusion analysis.', margin, y);
+    } else {
+      doc.text('This is a deterministic computational audit report compiled strictly under the Bangladesh Personal Law ILRMF Specification version 4.0.1.', margin, y);
+      y += 4;
+      doc.text('Compliance score and logic verification hashes are cryptographically bound to the referenced statutory codes and client prompt details.', margin, y);
+    }
+    y += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42); // slate-900
+    doc.text('Proprietary Framework Owned & Authorized by Md. Nazmul Islam, Advocate, Supreme Court of Bangladesh.', margin, y);
     y += 4;
-    doc.text('Compliance score and logic verification hashes are cryptographically bound to the referenced statutory codes and client prompt details.', margin, y);
-
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(148, 163, 184);
+    doc.text('© 2026 LUTUPUTU.COM. All rights of reproduction, software architecture, and deterministic code execution layouts are fully reserved.', margin, y);
+ 
     // Save/Download the PDF
-    const safeName = (selectedReligion + '-ilrmf-audit-report.pdf').toLowerCase();
+    const safeName = `${selectedReligion}-${type}-audit-report.pdf`.toLowerCase();
     doc.save(safeName);
   };
 
@@ -513,31 +607,102 @@ export default function App() {
                   Bangladesh Personal Law
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">Deterministic Legal Rule Metric Framework (ILRMF) Engine</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Deterministic Legal Rule Metric Framework (ILRMF) Engine • Chambers of <span className="font-semibold text-slate-700">Md. Nazmul Islam</span>, Advocate, Supreme Court of Bangladesh
+              </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-6">
-            <button
-              onClick={handleDownloadPDF}
-              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4.5 py-2 rounded-lg text-xs font-bold font-sans transition-all shadow-[0_4px_12px_rgba(16,185,129,0.15)] hover:shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] active:scale-[0.98] select-none cursor-pointer"
-              title="Download Formatted PDF Legal Audit Report"
-            >
-              <Download className="w-4 h-4" />
-              <span>Download PDF Report</span>
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsDownloadOpen(!isDownloadOpen)}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-lg text-xs font-bold font-sans transition-all shadow-[0_4px_12px_rgba(16,185,129,0.15)] hover:shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] active:scale-[0.98] select-none cursor-pointer"
+                title="Download Formatted PDF Legal Audit Report Options"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download PDF Report</span>
+                <ChevronDown className="w-3.5 h-3.5 ml-1 transition-transform duration-200" style={{ transform: isDownloadOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+              </button>
+              
+              {isDownloadOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40 cursor-default" 
+                    onClick={() => setIsDownloadOpen(false)} 
+                  />
+                  <div className="absolute right-0 mt-2.5 w-64 rounded-xl bg-white shadow-xl border border-slate-200/80 z-50 py-1.5 font-sans text-xs animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                      Select Download Format
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleDownloadPDF('irac');
+                        setIsDownloadOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-indigo-50/50 text-slate-700 flex flex-col gap-0.5 border-b border-slate-100 transition-colors"
+                    >
+                      <span className="font-bold text-indigo-700 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
+                        1. IRAC Sole PDF
+                      </span>
+                      <span className="text-[10px] text-slate-400 pl-3">Issue, Rule, Application, Conclusion</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleDownloadPDF('ilrmf');
+                        setIsDownloadOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-teal-50/50 text-slate-700 flex flex-col gap-0.5 border-b border-slate-100 transition-colors"
+                    >
+                      <span className="font-bold text-teal-700 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-teal-600" />
+                        2. ILRMF Sole PDF
+                      </span>
+                      <span className="text-[10px] text-slate-400 pl-3">Facts, Law, Argument, Relief</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleDownloadPDF('hybrid');
+                        setIsDownloadOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-emerald-50/50 text-slate-700 flex flex-col gap-0.5 transition-colors"
+                    >
+                      <span className="font-bold text-emerald-700 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                        3. Hybrid Mixed PDF
+                      </span>
+                      <span className="text-[10px] text-slate-400 pl-3">Unified IRAC & ILRMF Frameworks</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
 
-            <div className="text-right leading-tight hidden sm:block">
+            <div className="text-right leading-tight hidden xl:block">
               <p className="text-[10px] uppercase text-slate-400 tracking-wider font-mono">Active Jurisdiction</p>
               <p className="text-sm font-semibold uppercase text-slate-800 font-serif italic">Dhaka / BD Personal Law</p>
             </div>
             
-            <div className="text-right leading-tight border-l border-slate-200 pl-6">
-              <p className="text-[10px] uppercase text-slate-400 tracking-wider font-mono">System Status</p>
-              <div className="flex items-center gap-2 justify-end mt-0.5">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse"></div>
-                <p className="text-sm font-medium uppercase text-emerald-600 font-mono">Zero Hallucination Mode</p>
+            <div className="flex items-center gap-3 border-l border-slate-200 pl-6 select-none">
+              <div className="text-right leading-tight">
+                <p className="text-[10px] uppercase text-slate-400 tracking-wider font-mono">System Audit Engine</p>
+                <p className={`text-xs font-semibold uppercase font-mono transition-colors ${isILRMFActive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {isILRMFActive ? 'ILRMF Active' : 'Heuristic Mode'}
+                </p>
               </div>
+              <button 
+                type="button"
+                onClick={() => setIsILRMFActive(!isILRMFActive)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${isILRMFActive ? 'bg-emerald-600' : 'bg-slate-300'}`}
+                title="Toggle between Strict ILRMF Audit and Heuristic Traditional LLM mode"
+              >
+                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isILRMFActive ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
             </div>
           </div>
         </div>
@@ -570,14 +735,14 @@ export default function App() {
           <div className="flex gap-4 mt-6 md:mt-0">
             <div className="p-5 bg-white rounded-lg border border-slate-200 text-center min-w-[120px] shadow-sm">
               <p className="text-[10px] uppercase text-slate-400 tracking-widest font-mono">Metric Score</p>
-              <p className="text-3xl font-mono text-emerald-600 font-bold mt-1">
-                {evaluationResult?.verdict?.score ?? '0.0'}
+              <p className={`text-3xl font-mono font-bold mt-1 ${isILRMFActive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {isILRMFActive ? (evaluationResult?.verdict?.score ?? '0.0') : '0.0 (N/A)'}
               </p>
             </div>
             <div className="p-5 bg-white rounded-lg border border-slate-200 text-center min-w-[120px] shadow-sm">
               <p className="text-[10px] uppercase text-slate-400 tracking-widest font-mono">Verdict Band</p>
-              <p className="text-3xl font-serif italic text-slate-800 capitalize mt-1">
-                {evaluationResult?.verdict?.verdict?.toLowerCase() ?? 'none'}
+              <p className={`text-2xl font-serif italic mt-1.5 capitalize ${isILRMFActive ? 'text-slate-800' : 'text-rose-700'}`}>
+                {isILRMFActive ? (evaluationResult?.verdict?.verdict?.toLowerCase() ?? 'none') : 'unverified'}
               </p>
             </div>
           </div>
@@ -1086,159 +1251,349 @@ export default function App() {
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-6">
               <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                 <h2 className="font-serif italic text-slate-900 text-sm tracking-wider">Score Audit Verdict</h2>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsSidebarDownloadOpen(!isSidebarDownloadOpen)}
+                    className="flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200/50 hover:bg-emerald-100 px-2 py-1 rounded transition-all cursor-pointer font-bold font-sans select-none"
+                    title="Export this compliance report to PDF"
+                  >
+                    <Download className="w-3 h-3" />
+                    <span>Export PDF</span>
+                    <ChevronDown className="w-2.5 h-2.5 ml-0.5" />
+                  </button>
+                  
+                  {isSidebarDownloadOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40 cursor-default" 
+                        onClick={() => setIsSidebarDownloadOpen(false)} 
+                      />
+                      <div className="absolute right-0 mt-1.5 w-48 rounded-lg bg-white shadow-lg border border-slate-200/80 z-50 py-1 font-sans text-[11px] animate-in fade-in slide-in-from-top-1 duration-100">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleDownloadPDF('irac');
+                            setIsSidebarDownloadOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-1.5 hover:bg-indigo-50/50 text-slate-700 flex flex-col border-b border-slate-100"
+                        >
+                          <span className="font-bold text-indigo-700">1. IRAC Sole PDF</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleDownloadPDF('ilrmf');
+                            setIsSidebarDownloadOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-1.5 hover:bg-teal-50/50 text-slate-700 flex flex-col border-b border-slate-100"
+                        >
+                          <span className="font-bold text-teal-700">2. ILRMF Sole PDF</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleDownloadPDF('hybrid');
+                            setIsSidebarDownloadOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-1.5 hover:bg-emerald-50/50 text-slate-700 flex flex-col"
+                        >
+                          <span className="font-bold text-emerald-700">3. Hybrid Mixed PDF</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Dual Mode Switcher Tabs */}
+              <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-lg text-center text-xs font-medium font-sans">
                 <button
                   type="button"
-                  onClick={handleDownloadPDF}
-                  className="flex items-center gap-1.5 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200/50 hover:bg-emerald-100 px-2 py-1 rounded transition-all cursor-pointer font-bold font-sans select-none"
-                  title="Export this compliance report to PDF"
+                  onClick={() => setIsILRMFActive(true)}
+                  className={`py-2 rounded-md transition-all cursor-pointer ${isILRMFActive ? 'bg-white text-emerald-700 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-800'}`}
                 >
-                  <Download className="w-3 h-3" />
-                  <span>Export PDF</span>
+                  With ILRMF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsILRMFActive(false)}
+                  className={`py-2 rounded-md transition-all cursor-pointer ${!isILRMFActive ? 'bg-white text-rose-700 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-800'}`}
+                >
+                  Without ILRMF (Traditional)
                 </button>
               </div>
 
               {evaluationResult ? (
                 <>
-                  {/* Verdict Band Gauge */}
-                  <div className="text-center py-6 bg-slate-50 rounded-xl border border-slate-100 flex flex-col items-center justify-center gap-4">
-                    <div className="relative flex items-center justify-center">
-                      {/* Big Circle Score */}
-                      <div className="w-24 h-24 rounded-full border-4 border-slate-200 flex flex-col items-center justify-center bg-white shadow-sm">
-                        <span className="text-3xl font-black text-slate-900 font-mono">{evaluationResult.verdict.score}</span>
-                        <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono mt-0.5">ILRMF Score</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <span className={`text-xs font-bold px-3 py-1.5 rounded-full border uppercase tracking-widest font-mono ${getVerdictBandColor(evaluationResult.verdict.verdict)}`}>
-                        Verdict: {evaluationResult.verdict.verdict}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Progressive Bar Breakdown */}
-                  <div className="space-y-4">
-                    <h3 className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Metric Weights</h3>
-                    
-                    {/* FACTS check */}
-                    <div>
-                      <div className="flex items-center justify-between text-xs mb-1.5">
-                        <span className="font-medium text-slate-700">
-                          Facts Specificity (20%)
-                        </span>
-                        <span className="font-mono text-emerald-600 font-bold">{evaluationResult.factCheck.score}/100</span>
-                      </div>
-                      <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-300 ${getScoreColor(evaluationResult.factCheck.score)}`}
-                          style={{ width: `${evaluationResult.factCheck.score}%` }}
-                        />
-                      </div>
-                      <span className="text-[10px] text-slate-400 block mt-1.5 leading-relaxed">{evaluationResult.factCheck.note}</span>
-                    </div>
-
-                    {/* LAW matching */}
-                    <div>
-                      <div className="flex items-center justify-between text-xs mb-1.5">
-                        <span className="font-medium text-slate-700">
-                          Statutory Alignment (30%)
-                        </span>
-                        <span className="font-mono text-emerald-600 font-bold">{evaluationResult.lawMatch.score}/100</span>
-                      </div>
-                      <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-300 ${getScoreColor(evaluationResult.lawMatch.score)}`}
-                          style={{ width: `${evaluationResult.lawMatch.score}%` }}
-                        />
-                      </div>
-                      <span className="text-[10px] text-slate-400 block mt-1.5 leading-relaxed">{evaluationResult.lawMatch.note}</span>
-                    </div>
-
-                    {/* LOGIC consistency */}
-                    <div>
-                      <div className="flex items-center justify-between text-xs mb-1.5">
-                        <span className="font-medium text-slate-700">
-                          Reasoning Path Audit (50%)
-                        </span>
-                        <span className="font-mono text-emerald-600 font-bold">{evaluationResult.audit.logicScore}/100</span>
-                      </div>
-                      <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-300 ${getScoreColor(evaluationResult.audit.logicScore)}`}
-                          style={{ width: `${evaluationResult.audit.logicScore}%` }}
-                        />
-                      </div>
-                      <span className="text-[10px] text-slate-400 block mt-1.5 leading-relaxed">{evaluationResult.audit.note}</span>
-                    </div>
-                  </div>
-
-                  {/* Audit Trail Steps */}
-                  <div className="space-y-4 pt-4 border-t border-slate-200">
-                    <h3 className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Reasoning Path Compliance</h3>
-                    <div className="space-y-2.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-                      {evaluationResult.audit.steps.map((step: any, idx: number) => (
-                        <div key={idx} className="flex items-start gap-3 p-3 rounded bg-slate-50/50 border border-slate-100">
-                          {getStepValidationIcon(step.valid)}
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-[10px] font-bold font-mono text-slate-400">{step.step}</span>
-                              <span className={`text-[9px] font-bold font-mono px-2 py-0.5 rounded border ${
-                                step.valid === 'PASS' 
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200/50' 
-                                : step.valid === 'WEAK' 
-                                ? 'bg-amber-50 text-amber-700 border-amber-200/50' 
-                                : 'bg-rose-50 text-rose-700 border-rose-200/50'
-                              }`}>{step.valid}</span>
-                            </div>
-                            <p className="text-[11px] text-slate-700 mt-1 leading-relaxed italic">
-                              "{step.content || '(empty statement)'}"
-                            </p>
-                            <span className="text-[9px] text-slate-400 block mt-1.5 font-mono">
-                              * {step.note}
-                            </span>
+                  {isILRMFActive ? (
+                    <>
+                      {/* Verdict Band Gauge */}
+                      <div className="text-center py-6 bg-slate-50 rounded-xl border border-slate-100 flex flex-col items-center justify-center gap-4">
+                        <div className="relative flex items-center justify-center">
+                          {/* Big Circle Score */}
+                          <div className="w-24 h-24 rounded-full border-4 border-slate-200 flex flex-col items-center justify-center bg-white shadow-sm">
+                            <span className="text-3xl font-black text-slate-900 font-mono">{evaluationResult.verdict.score}</span>
+                            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono mt-0.5">ILRMF Score</span>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
 
-                  {/* Reasoning Gaps and Remediation */}
-                  <div className="pt-4 border-t border-slate-200">
-                    <h3 className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider mb-2">Identified Logic Gaps ({evaluationResult.audit.gaps.length})</h3>
-                    {evaluationResult.audit.gaps.length === 0 ? (
-                      <div className="bg-emerald-50 text-emerald-800 text-xs p-3.5 rounded-lg border border-emerald-200 flex items-start gap-2.5">
-                        <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                         <div>
-                          <p className="font-semibold text-emerald-900">Pristine Logical Coherence</p>
-                          <p className="text-[10px] text-emerald-800/80 leading-relaxed mt-0.5">The reasoning chain contains no logical leaps, unmapped rules, or unsupported conclusions.</p>
+                          <span className={`text-xs font-bold px-3 py-1.5 rounded-full border uppercase tracking-widest font-mono ${getVerdictBandColor(evaluationResult.verdict.verdict)}`}>
+                            Verdict: {evaluationResult.verdict.verdict}
+                          </span>
                         </div>
                       </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {evaluationResult.audit.gaps.map((gap: any, idx: number) => (
-                          <div key={idx} className="bg-rose-50 text-rose-800 text-xs p-3.5 rounded-lg border border-rose-200 flex items-start gap-2.5">
+
+                      {/* Progressive Bar Breakdown */}
+                      <div className="space-y-4">
+                        <h3 className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Metric Weights</h3>
+                        
+                        {/* FACTS check */}
+                        <div>
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <span className="font-medium text-slate-700">
+                              Facts Specificity (20%)
+                            </span>
+                            <span className="font-mono text-emerald-600 font-bold">{evaluationResult.factCheck.score}/100</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-300 ${getScoreColor(evaluationResult.factCheck.score)}`}
+                              style={{ width: `${evaluationResult.factCheck.score}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-slate-400 block mt-1.5 leading-relaxed">{evaluationResult.factCheck.note}</span>
+                        </div>
+
+                        {/* LAW matching */}
+                        <div>
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <span className="font-medium text-slate-700">
+                              Statutory Alignment (30%)
+                            </span>
+                            <span className="font-mono text-emerald-600 font-bold">{evaluationResult.lawMatch.score}/100</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-300 ${getScoreColor(evaluationResult.lawMatch.score)}`}
+                              style={{ width: `${evaluationResult.lawMatch.score}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-slate-400 block mt-1.5 leading-relaxed">{evaluationResult.lawMatch.note}</span>
+                        </div>
+
+                        {/* LOGIC consistency */}
+                        <div>
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <span className="font-medium text-slate-700">
+                              Reasoning Path Audit (50%)
+                            </span>
+                            <span className="font-mono text-emerald-600 font-bold">{evaluationResult.audit.logicScore}/100</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-300 ${getScoreColor(evaluationResult.audit.logicScore)}`}
+                              style={{ width: `${evaluationResult.audit.logicScore}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-slate-400 block mt-1.5 leading-relaxed">{evaluationResult.audit.note}</span>
+                        </div>
+                      </div>
+
+                      {/* Audit Trail Steps */}
+                      <div className="space-y-4 pt-4 border-t border-slate-200">
+                        <h3 className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Reasoning Path Compliance</h3>
+                        <div className="space-y-2.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                          {evaluationResult.audit.steps.map((step: any, idx: number) => (
+                            <div key={idx} className="flex items-start gap-3 p-3 rounded bg-slate-50/50 border border-slate-100">
+                              {getStepValidationIcon(step.valid)}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[10px] font-bold font-mono text-slate-400">{step.step}</span>
+                                  <span className={`text-[9px] font-bold font-mono px-2 py-0.5 rounded border ${
+                                    step.valid === 'PASS' 
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200/50' 
+                                    : step.valid === 'WEAK' 
+                                    ? 'bg-amber-50 text-amber-700 border-amber-200/50' 
+                                    : 'bg-rose-50 text-rose-700 border-rose-200/50'
+                                  }`}>{step.valid}</span>
+                                </div>
+                                <p className="text-[11px] text-slate-700 mt-1 leading-relaxed italic">
+                                  "{step.content || '(empty statement)'}"
+                                </p>
+                                <span className="text-[9px] text-slate-400 block mt-1.5 font-mono">
+                                  * {step.note}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Reasoning Gaps and Remediation */}
+                      <div className="pt-4 border-t border-slate-200">
+                        <h3 className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider mb-2">Identified Logic Gaps ({evaluationResult.audit.gaps.length})</h3>
+                        {evaluationResult.audit.gaps.length === 0 ? (
+                          <div className="bg-emerald-50 text-emerald-800 text-xs p-3.5 rounded-lg border border-emerald-200 flex items-start gap-2.5">
+                            <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-semibold text-emerald-900">Pristine Logical Coherence</p>
+                              <p className="text-[10px] text-emerald-800/80 leading-relaxed mt-0.5">The reasoning chain contains no logical leaps, unmapped rules, or unsupported conclusions.</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {evaluationResult.audit.gaps.map((gap: any, idx: number) => (
+                              <div key={idx} className="bg-rose-50 text-rose-800 text-xs p-3.5 rounded-lg border border-rose-200 flex items-start gap-2.5">
+                                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="font-semibold uppercase tracking-wider text-[10px] font-mono text-rose-900">{gap.type} in {gap.location}</p>
+                                  <p className="text-[10px] text-rose-800/80 mt-0.5 leading-relaxed">{gap.description}.</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Escalation Alert */}
+                      {escalate && (
+                        <div className="bg-rose-50 text-rose-900 p-4 rounded-lg border border-rose-200">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <AlertOctagon className="w-4 h-4 text-rose-600 shrink-0" />
+                            <span className="font-bold text-xs uppercase tracking-widest font-mono">JUDICIAL ESCALATION TRIGGERED</span>
+                          </div>
+                          <p className="text-[11px] text-rose-800 leading-relaxed font-sans">
+                            Reason: {escalateReason || 'Immediate professional legal intervention recommended.'}
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {/* Traditional Unverified Gauge */}
+                      <div className="text-center py-6 bg-rose-50/50 rounded-xl border border-rose-100 flex flex-col items-center justify-center gap-4">
+                        <div className="relative flex items-center justify-center">
+                          {/* Big Circle Score */}
+                          <div className="w-24 h-24 rounded-full border-4 border-slate-300 flex flex-col items-center justify-center bg-white shadow-sm">
+                            <span className="text-3xl font-black text-rose-600 font-mono">0.0</span>
+                            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-mono mt-0.5">UNVERIFIED</span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="text-xs font-bold px-3 py-1.5 rounded-full border uppercase tracking-widest font-mono text-rose-700 bg-rose-50 border-rose-200">
+                            VERDICT: ZERO VERIFICATION
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Traditional Progressive Bar Breakdown */}
+                      <div className="space-y-4">
+                        <h3 className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Traditional Metric Gaps</h3>
+                        
+                        {/* FACTS check */}
+                        <div>
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <span className="font-medium text-slate-700">
+                              Facts Specificity (0% Verified)
+                            </span>
+                            <span className="font-mono text-rose-600 font-bold">0/100</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div className="h-full bg-slate-300 w-0 transition-all duration-300" />
+                          </div>
+                          <span className="text-[10px] text-rose-600 font-medium block mt-1.5 leading-relaxed">
+                            No entity extraction boundary checked. Danger: High probability of context confusion.
+                          </span>
+                        </div>
+
+                        {/* LAW matching */}
+                        <div>
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <span className="font-medium text-slate-700">
+                              Statutory Alignment (0% Verified)
+                            </span>
+                            <span className="font-mono text-rose-600 font-bold">0/100</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div className="h-full bg-slate-300 w-0 transition-all duration-300" />
+                          </div>
+                          <span className="text-[10px] text-rose-600 font-medium block mt-1.5 leading-relaxed">
+                            No database rule mapping. Citations may be generated by statistical probability (hallucinations).
+                          </span>
+                        </div>
+
+                        {/* LOGIC consistency */}
+                        <div>
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <span className="font-medium text-slate-700">
+                              Reasoning Path Audit (0% Verified)
+                            </span>
+                            <span className="font-mono text-rose-600 font-bold">0/100</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div className="h-full bg-slate-300 w-0 transition-all duration-300" />
+                          </div>
+                          <span className="text-[10px] text-rose-600 font-medium block mt-1.5 leading-relaxed">
+                            No connector constraints or relational maps verified. Gaps and fallacies go unflagged.
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Reasoning Path Compliance (Traditional) */}
+                      <div className="space-y-4 pt-4 border-t border-slate-200">
+                        <h3 className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider">Reasoning Path Compliance</h3>
+                        <div className="space-y-2.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                          {evaluationResult.audit.steps.map((step: any, idx: number) => (
+                            <div key={idx} className="flex items-start gap-3 p-3 rounded bg-slate-50 border border-slate-200 opacity-60">
+                              <HelpCircle className="w-5 h-5 text-slate-400 shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[10px] font-bold font-mono text-slate-400">{step.step}</span>
+                                  <span className="text-[9px] font-bold font-mono px-2 py-0.5 rounded border bg-slate-100 text-slate-500 border-slate-200">UNAUDITED</span>
+                                </div>
+                                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed italic">
+                                  "{step.content || '(empty statement)'}"
+                                </p>
+                                <span className="text-[9px] text-slate-400 block mt-1.5 font-mono">
+                                  * Step bypasses physical rule engine.
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Traditional System Vulnerabilities */}
+                      <div className="pt-4 border-t border-slate-200">
+                        <h3 className="text-[10px] font-mono font-bold uppercase text-slate-400 tracking-wider mb-2">Traditional System Vulnerabilities (3)</h3>
+                        <div className="space-y-2">
+                          <div className="bg-rose-50 text-rose-800 text-xs p-3.5 rounded-lg border border-rose-200 flex items-start gap-2.5">
                             <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                             <div>
-                              <p className="font-semibold uppercase tracking-wider text-[10px] font-mono text-rose-900">{gap.type} in {gap.location}</p>
-                              <p className="text-[10px] text-rose-800/80 mt-0.5 leading-relaxed">{gap.description}.</p>
+                              <p className="font-semibold uppercase tracking-wider text-[10px] font-mono text-rose-900">HALLUCINATION RISK</p>
+                              <p className="text-[10px] text-rose-800/80 mt-0.5 leading-relaxed">Traditional generative systems frequently invent section numbers, timeline rules under MFLO 1961, and custom dower conditions.</p>
                             </div>
                           </div>
-                        ))}
+                          <div className="bg-amber-50 text-amber-800 text-xs p-3.5 rounded-lg border border-amber-200 flex items-start gap-2.5">
+                            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-semibold uppercase tracking-wider text-[10px] font-mono text-amber-900">LOGICAL DISCONTINUITY</p>
+                              <p className="text-[10px] text-amber-800/80 mt-0.5 leading-relaxed">The reasoning chain skips formal logical audits. This allows major leaps of logic or circular assertions to pass undetected.</p>
+                            </div>
+                          </div>
+                          <div className="bg-slate-50 text-slate-800 text-xs p-3.5 rounded-lg border border-slate-200 flex items-start gap-2.5">
+                            <XCircle className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-semibold uppercase tracking-wider text-[10px] font-mono text-slate-900">NON-REPRODUCIBLE ADVICE</p>
+                              <p className="text-[10px] text-slate-800/80 mt-0.5 leading-relaxed">Probabilistic text generators often yield conflicting legal advice for the exact same dispute, failing basic rule-based consistency.</p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Escalation Alert */}
-                  {escalate && (
-                    <div className="bg-rose-50 text-rose-900 p-4 rounded-lg border border-rose-200">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <AlertOctagon className="w-4 h-4 text-rose-600 shrink-0" />
-                        <span className="font-bold text-xs uppercase tracking-widest font-mono">JUDICIAL ESCALATION TRIGGERED</span>
-                      </div>
-                      <p className="text-[11px] text-rose-800 leading-relaxed font-sans">
-                        Reason: {escalateReason || 'Immediate professional legal intervention recommended.'}
-                      </p>
-                    </div>
+                    </>
                   )}
                 </>
               ) : (
@@ -1299,8 +1654,8 @@ export default function App() {
               Deterministic legal rule engine, metrics audits, and personal family law codifications for Bangladesh. Built strictly under 
               reproducible rule frameworks without any probabilistic generative experiments.
             </p>
-            <p className="text-[10px] text-slate-400 mt-4 font-mono">
-              © 2026 Lutuputu Personal Legal Systems. All Rights Reserved.
+            <p className="text-[10px] text-slate-400 mt-4 font-mono leading-relaxed">
+              © 2026 Lutuputu Personal Legal Systems. All Rights Reserved. All intellectual property, rights, and algorithms are proprietary and owned by <span className="font-semibold text-slate-500">Md. Nazmul Islam</span>, Advocate, Supreme Court of Bangladesh.
             </p>
           </div>
         </div>
