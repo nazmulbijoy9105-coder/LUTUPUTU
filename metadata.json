@@ -1,6 +1,6 @@
 {
-  "name": "Lutuputu Legal Rule Engine",
-  "description": "A deterministic legal rule engine implementing the Issue-Law-Reasoning-Conclusion Metric Framework (ILRMF) for personal family laws in Bangladesh.",
+  "name": "Nazmul Islam Chambers - Legal Rule Engine",
+  "description": "Professional deterministic legal rule engine for personal family laws in Bangladesh, supervised by Md. Nazmul Islam, Advocate, Supreme Court of Bangladesh.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

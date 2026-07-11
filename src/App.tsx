@@ -1953,7 +1953,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
             <div className="flex gap-6">
-              <span className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">Lutuputu Engine v4.0.1</span>
+              <span className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">Chambers Engine v4.0.1</span>
               <span className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">DB: BD-FAM-2023-REV</span>
             </div>
             <div className="flex items-center gap-2">
@@ -1962,13 +1962,13 @@ export default function App() {
             </div>
           </div>
           <div className="text-center pt-6 border-t border-slate-100">
-            <p className="text-xs text-slate-400 tracking-widest uppercase font-bold mb-2">LUTUPUTU.COM</p>
+            <p className="text-xs text-slate-400 tracking-widest uppercase font-bold mb-2">NAZMULCHAMBERS.COM</p>
             <p className="text-xs text-slate-600 max-w-xl mx-auto leading-relaxed">
               Deterministic legal rule engine, metrics audits, and personal family law codifications for Bangladesh. Built strictly under 
               reproducible rule frameworks without any probabilistic generative experiments.
             </p>
             <p className="text-[10px] text-slate-400 mt-4 font-mono leading-relaxed">
-              © 2026 Lutuputu Personal Legal Systems. All Rights Reserved. All intellectual property, rights, and algorithms are proprietary and owned by <span className="font-semibold text-slate-500">Md. Nazmul Islam</span>, Advocate, Supreme Court of Bangladesh.
+              © 2026 Nazmul Islam Chambers. All Rights Reserved. All intellectual property, rights, and algorithms are proprietary and owned by <span className="font-semibold text-slate-500">Md. Nazmul Islam</span>, Advocate, Supreme Court of Bangladesh.
             </p>
           </div>
         </div>
