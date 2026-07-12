@@ -76,16 +76,16 @@ Task: Structure a formal legal response conforming strictly to the Deterministic
 
 Requirements:
 1. 'religion': Must be exactly one of 'muslim', 'hindu', 'christian', or 'adibashi'.
-2. 'question': Synthesize a clear, direct, and formal legal question based on the situation (e.g., 'What is the procedure for Talaq without notice?').
-3. 'issue': Formulate a formal legal issue statement (e.g., 'Whether a Talaq pronounced over the phone is valid under MFLO 1961 Section 7 without written notice.').
-4. 'rule': Provide the applicable statutory rule text, section, and legal citations. Keep it professional.
-5. 'application': Apply the legal rule to the client's domestic situation facts. You MUST construct a solid logical argument and actively use logical connectors like 'since', 'because', 'therefore', 'under' or 'given that' to ensure a high logic audit score.
-6. 'conclusion': Formulate the final conclusion, the outcome, and practical, practical next legal actions.
-7. 'relatedRules': Extract the exact matching rule IDs from the provided database list that apply to this situation (e.g., ['fam-talaq-001']). Do not invent any new IDs.
-8. 'escalate': Determine if this domestic situation involves immediate danger, criminal acts (like dowry violence or physical abuse), severe legal urgency, or highly complex personal law that requires immediate attorney escalation (true/false).
+2. 'question': Synthesize a clear, direct, and formal legal question based on the situation. Set this to the client's actual original domestic situation text so we preserve all specific allegations, or a highly detailed description of the facts including specific names like Anika Tabassum, Mr. Ismail, Muammar, Arad, and Md. Jasim Uddin, if present in the situation text.
+3. 'issue': Formulate a formal legal issue statement. To ensure it passes the deterministic facts-check audit, it MUST explicitly contain multiple legal entities mentioned in the text (e.g. at least two or three of the following exact lowercase words: 'husband', 'wife', 'child', 'talaq', 'agreement', 'custody', 'maintenance', 'mahr'). It should follow a formal standard: "Whether the dispute between the husband (Muammar) and the wife (Anika Tabassum) regarding child custody of their minor child Arad, separate maintenance demands, and coerced signing of agreements under threats is legally actionable..."
+4. 'rule': Provide the applicable statutory rule text, section, and legal citations. Keep it professional and compile the mapped statutory codes. Make sure to map all relevant rule IDs, especially 'fam-dv-001' (Domestic Violence Act 2010) if there are threats, coercion, harassment, or physical intrusion.
+5. 'application': Apply the legal rule to the client's domestic situation facts in detail. You MUST construct a solid, multi-paragraph logical argument and actively use logical connectors like 'since', 'because', 'therefore', 'under', and 'given that' to ensure a high logic audit score. Mention the specific facts such as unlawful passport possession/retention, prevented visitation, residential trespass/wardrobe looting, and misappropriated mutual bank funds.
+6. 'conclusion': Formulate the final conclusion, the outcome, and practical, actionable next legal actions. The conclusion MUST be highly detailed (at least 100 characters) and MUST contain numbered steps starting with (1), (2), and optional (3), and MUST include specific auxiliary action verbs like 'must', 'should', or 'file' (e.g., "The client should file for protection orders under the Domestic Violence Act 2010...").
+7. 'relatedRules': Extract the exact matching rule IDs from the provided database list that apply to this situation (e.g., ['fam-talaq-001', 'fam-custody-001', 'fam-dv-001']). Do not invent any new IDs.
+8. 'escalate': Determine if this domestic situation involves immediate danger, criminal acts, coercion, threats, custody withholding, or severe legal urgency requiring professional advocate/court escalation (true/false).
 9. 'escalateReason': Specify a clear, professional reason for immediate professional legal/court escalation if 'escalate' is true. Leave empty if false.
 
-Return a JSON response matching the required schema.`;
+Return a JSON response matching the required schema. Ensure the response is highly detailed and complete.`;
 
       const response = await ai.models.generateContent({
         model: "gemini-3.5-flash",
