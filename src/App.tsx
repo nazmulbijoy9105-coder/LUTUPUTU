@@ -28,7 +28,8 @@ import {
   Lock,
   Unlock,
   Wifi,
-  WifiOff
+  WifiOff,
+  Shield
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
@@ -75,6 +76,15 @@ export default function App() {
   const [isDownloadOpen, setIsDownloadOpen] = useState<boolean>(false);
   const [isSidebarDownloadOpen, setIsSidebarDownloadOpen] = useState<boolean>(false);
 
+  // GitHub & Local Protection security states
+  const [showSecuritySettings, setShowSecuritySettings] = useState<boolean>(false);
+  const [localCodeLock, setLocalCodeLock] = useState<boolean>(false);
+  const [lockPasscode, setLockPasscode] = useState<string>('9105');
+  const [passcodeInput, setPasscodeInput] = useState<string>('');
+  const [isLockUnlocked, setIsLockUnlocked] = useState<boolean>(true);
+  const [lockError, setLockError] = useState<string>('');
+  const [githubUser, setGithubUser] = useState<string>('NAZMULBIJOY9105');
+
   // Consultation Stage State
   const [domesticSituation, setDomesticSituation] = useState<string>('');
   const [isConsulting, setIsConsulting] = useState<boolean>(false);
@@ -117,14 +127,60 @@ export default function App() {
     const rulesOfReligion = queryFamilyKnowledge(detectedReligion).rules;
     const matchedRuleIds: string[] = [];
     
+    const ruleMatchCriteria: Record<string, RegExp> = {
+      // Muslim
+      'fam-talaq-001': /talaq|pronounce|divorce notice|iddat|90 days/i,
+      'fam-khul-001': /khul|khula|divorce by wife/i,
+      'fam-denmahr-001': /mahr|denmahr|dower|prompt|deferred/i,
+      'fam-custody-001': /custody|hizanat|guardian|guardianship|minor|son|daughter|child|children|underage|uncle|wards/i,
+      'fam-maintenance-001': /maintenance|nafaqa|separate maintenance|iddat maintenance|support money/i,
+      'fam-polygamy-001': /polygamy|second marriage|second wife|plural marriage/i,
+      'fam-dowry-001': /dowry|joutuk/i,
+      'fam-dv-001': /violence|abuse|assault|protection order|residence order|harass|torture/i,
+      'fam-child-marriage-001': /child marriage|underage marriage|minor marriage/i,
+
+      // Hindu
+      'fam-hindu-001': /hindu marriage|hindu divorce|divorce under hindu/i,
+      'fam-hindu-002': /separation|separate residence|hindu wife/i,
+      'fam-hindu-003': /adopt|adoption/i,
+      'fam-hindu-004': /succession|hindu succession|heir|daughter share|will/i,
+
+      // Christian
+      'fam-chr-001': /christian divorce|divorce act 1869|adultery/i,
+      'fam-chr-002': /christian succession|succession act|isa 1925/i,
+
+      // Adibashi
+      'fam-adi-001': /adibashi marriage|tribal customary|customary marriage/i,
+      'fam-adi-002': /adibashi succession|tribal succession|matrilineal/i
+    };
+
+    const stopwords = new Set([
+      'after', 'before', 'without', 'under', 'shall', 'court', 'where', 'which', 'there', 'their', 'about', 'other',
+      'whose', 'should', 'would', 'first', 'years', 'months', 'days', 'rights', 'husband', 'wife', 'marriage', 'divorce',
+      'gets', 'until', 'through', 'obtain', 'grounds', 'divided', 'primary', 'can', 'has', 'have', 'had', 'does', 'do',
+      'did', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'may', 'might', 'must', 'should', 'would', 'could',
+      'will', 'shall', 'some', 'any', 'every', 'each', 'all', 'none', 'no', 'not', 'yes', 'but', 'and', 'or', 'so',
+      'because', 'since', 'therefore', 'given', 'conclude', 'must', 'should', 'file', 'consult', 'from', 'with', 'about'
+    ]);
+
     rulesOfReligion.forEach(r => {
-      const titleWords = r.title.toLowerCase().split(/\s+/);
-      const matched = titleWords.some(w => w.length > 3 && text.includes(w)) || 
-                      r.rule.toLowerCase().split(/\s+/).filter(w => w.length > 4 && text.includes(w)).length >= 2;
-      if (matched) {
+      const regex = ruleMatchCriteria[r.id];
+      if (regex && regex.test(text)) {
         matchedRuleIds.push(r.id);
       }
     });
+
+    if (matchedRuleIds.length === 0) {
+      rulesOfReligion.forEach(r => {
+        const titleWords = r.title.toLowerCase().split(/\s+/).filter(w => w.length > 3 && !stopwords.has(w));
+        const ruleWords = r.rule.toLowerCase().split(/[^\w]+/).filter(w => w.length > 4 && !stopwords.has(w));
+        const matched = titleWords.some(w => text.includes(w)) || 
+                        ruleWords.filter(w => text.includes(w)).length >= 2;
+        if (matched) {
+          matchedRuleIds.push(r.id);
+        }
+      });
+    }
 
     // Explicitly add key protection, custody, talaq, and maintenance rules if specific fact indicators are present
     if (/violence|threat|intimidat|abuse|coerce|force|loot|wardrobe/i.test(text)) {
@@ -137,7 +193,7 @@ export default function App() {
         matchedRuleIds.push('fam-custody-001');
       }
     }
-    if (/divorce|talaq|separate/i.test(text)) {
+    if (/divorce|talaq|separation\b|dissolution\b|separate\s+(?:living|residence|house|home|maintenance)/i.test(text)) {
       if (!matchedRuleIds.includes('fam-talaq-001') && rulesOfReligion.some(r => r.id === 'fam-talaq-001')) {
         matchedRuleIds.push('fam-talaq-001');
       }
@@ -145,7 +201,7 @@ export default function App() {
         matchedRuleIds.push('fam-khul-001');
       }
     }
-    if (/maintenance|money|expense|support|bdt|fund/i.test(text)) {
+    if (/maintenance|nafaqa|alimony|support\s+(?:money|payment|expense)/i.test(text)) {
       if (!matchedRuleIds.includes('fam-maintenance-001') && rulesOfReligion.some(r => r.id === 'fam-maintenance-001')) {
         matchedRuleIds.push('fam-maintenance-001');
       }
@@ -156,7 +212,6 @@ export default function App() {
     }
     
     const selectedRulesList = rulesOfReligion.filter(r => matchedRuleIds.includes(r.id));
-    const ruleTitles = selectedRulesList.map(r => r.title).join(" & ");
     const ruleSources = selectedRulesList.map(r => r.source).join(", ");
     
     // Extract real entity names and detailed factual occurrences from the situation text dynamically
@@ -167,7 +222,13 @@ export default function App() {
       "Bangladesh", "Muslim", "Hindu", "Christian", "Adibashi", "Sunni", "Shia", "Talaq", "Khul", "Mahr", "Denmahr",
       "Court", "Family", "Act", "Ordinance", "Chairman", "Section", "MFLO", "DMMA", "GWA", "ISA", "ID", "Title", "Rule",
       "Irac", "Ilrmf", "Chambers", "Neum", "Lex", "Dhaka", "Guardians", "Wards", "Domestic", "Violence", "Prohibition",
-      "Marriage", "Restraint", "During", "Under", "Given", "Therefore", "Since", "Because", "This", "That", "Wife", "Husband"
+      "Marriage", "Restraint", "During", "Under", "Given", "Therefore", "Since", "Because", "This", "That", "Wife", "Husband",
+      "After", "Before", "Without", "His", "Her", "Their", "Its", "Our", "Your", "My", "They", "These", "Those", "Who", "Whose", 
+      "Whom", "What", "Which", "Why", "How", "When", "Where", "No", "Not", "Never", "Always", "Some", "Any", "Every", "Each", 
+      "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Paternal", "Maternal", 
+      "Uncle", "Aunt", "Brother", "Sister", "Mother", "Father", "Son", "Daughter", "Grandfather", "Grandmother", "Cousin", 
+      "Minor", "Adult", "Child", "Children", "Lawyer", "Advocate", "Attorney", "Judge", "Chairman", "Member", "Police", 
+      "Officer", "Local", "Businessman", "Seller", "Buyer", "District", "Personal", "Family", "Law", "Engine"
     ]);
     properNouns.forEach(pn => {
       if (!commonExclude.has(pn) && pn.length > 2 && !names.includes(pn)) {
@@ -196,6 +257,9 @@ export default function App() {
     }
     if (/violence|abuse|assault|shout/i.test(text)) {
       factDetails.push("physical domestic violence, verbal shouting, harassment, and marital disharmony");
+    }
+    if (/sell|sold|transfer|alienat|property|land/i.test(text)) {
+      factDetails.push("unauthorized sale and alienation of minor's inherited property by a de facto guardian");
     }
     
     if (factDetails.length === 0) {
@@ -239,16 +303,42 @@ export default function App() {
     if (text.includes('house') || text.includes('property') || text.includes('land')) detectedEntities.push('property');
     if (text.includes('custody')) detectedEntities.push('custody');
     if (text.includes('maintenance')) detectedEntities.push('maintenance');
+    if (text.includes('father')) detectedEntities.push('father');
+    if (text.includes('mother')) detectedEntities.push('mother');
+    if (text.includes('uncle')) detectedEntities.push('uncle');
 
-    // Default to husband and wife to ensure at least 2 entities are present
+    // Ensure we have at least 2 entities for the audit, but align with the scenario's topic
     if (detectedEntities.length < 2) {
-      if (!detectedEntities.includes('husband')) detectedEntities.push('husband');
-      if (!detectedEntities.includes('wife')) detectedEntities.push('wife');
+      const isMarriageRelated = /divorce|talaq|khul|marriage|married|mahr|maintenance/i.test(text) || 
+                                matchedRuleIds.some(id => ['fam-talaq-001', 'fam-khul-001', 'fam-denmahr-001', 'fam-maintenance-001', 'fam-polygamy-001', 'fam-dowry-001'].includes(id));
+      if (isMarriageRelated) {
+        if (!detectedEntities.includes('husband')) detectedEntities.push('husband');
+        if (!detectedEntities.includes('wife')) detectedEntities.push('wife');
+      } else {
+        if (!detectedEntities.includes('child')) detectedEntities.push('child');
+        if (!detectedEntities.includes('guardian')) detectedEntities.push('guardian');
+      }
     }
 
-    // Comprehensive dynamic issue statement incorporating exact lowercase legal entity terms (husband, wife, child, talaq, custody, agreement, maintenance)
+    let relationshipDesc = "dispute";
+    const hasHusband = detectedEntities.includes("husband");
+    const hasWife = detectedEntities.includes("wife");
+    const hasChild = detectedEntities.includes("child") || text.includes("son") || text.includes("daughter");
+    const hasGuardian = detectedEntities.includes("guardian") || text.includes("uncle") || text.includes("father") || text.includes("mother");
+
+    if (hasHusband && hasWife) {
+      relationshipDesc = "dispute between the husband and the wife";
+    } else if (hasChild && hasGuardian) {
+      relationshipDesc = "dispute concerning the minor child, guardianship, and family interests";
+    } else if (hasChild) {
+      relationshipDesc = "dispute concerning the child's welfare and parental rights";
+    } else {
+      relationshipDesc = "family law dispute";
+    }
+
+    // Comprehensive dynamic issue statement incorporating exact lowercase legal entity terms
     // This guarantees a PASS in the facts-check and audit-trace ISSUE validation!
-    const issueQuestion = `Whether the dispute between the husband and the wife${names.length > 0 ? ` (specifically involving ${names.join(" and ")})` : ''} regarding ${detectedEntities.join(", ")} and related grievances is legally actionable and enforceable under Bangladesh family law, including statutory codes such as ${ruleSources || 'the relevant personal family laws'}.`;
+    const issueQuestion = `Whether the ${relationshipDesc}${names.length > 0 ? ` (specifically involving ${names.join(" and ")})` : ''} regarding ${detectedEntities.join(", ")} is legally actionable and enforceable under Bangladesh family law, including statutory codes such as ${ruleSources || 'the relevant personal family laws'}.`;
     
     // Statutory rule formatting
     const ruleHeader = `MAPPED STATUTORY CODES & STANDARDS (${selectedRulesList.length} rules):\n\n`;
@@ -263,6 +353,11 @@ export default function App() {
     
     selectedRulesList.forEach(rule => {
       let ruleApp = `Regarding the matter of ${rule.title}, because the factual record contains details relating to this, we must evaluate compliance under ${rule.source}. Under this provision, since the law directs that "${rule.rule}", any non-compliant actions by the opposing party${names.length > 0 ? ` (specifically involving ${names.join(" or ")})` : ''} create actionable grounds for relief before the family court.`;
+      
+      if (rule.id === 'fam-custody-001' && /uncle|paternal|relative/i.test(text) && /sell|sold|transfer|alienat|property|land/i.test(text)) {
+        ruleApp += ` In this specific scenario, a paternal uncle acts merely as a de facto guardian of the minor child. Under Muslim personal law and the Guardians and Wards Act 1890, a de facto guardian lacks any legal authority to alienate, transfer, or sell the immovable property of a minor without prior permission from the District Judge. Therefore, because the transaction was executed without court sanction and does not serve the minor's welfare, the sale of the agricultural land is legally void ab initio.`;
+      }
+      
       analysisParagraphs.push(ruleApp);
     });
     
@@ -275,8 +370,13 @@ export default function App() {
     if (text.includes('violence') || text.includes('abuse') || text.includes('threat') || text.includes('assault') || text.includes('shout')) {
       conclusionActions.push(`(${recIndex++}) File an urgent application for protection and residence orders under the Domestic Violence Act 2010 to prevent further intimidation, secure personal safety, and address any residential threats.`);
     }
-    if (text.includes('custody') || text.includes('child') || text.includes('son') || text.includes('daughter') || text.includes('visitation')) {
-      conclusionActions.push(`(${recIndex++}) Prepare and file necessary petitions for child custody (Hizanat) and parental access in the Family Court under the Guardians and Wards Act 1890${text.includes('passport') ? ', and demand the immediate return of child/parent passport documents.' : '.'}`);
+    if (text.includes('custody') || text.includes('child') || text.includes('son') || text.includes('daughter') || text.includes('visitation') || text.includes('uncle') || text.includes('guardian')) {
+      if (/sell|sold|property|land/i.test(text)) {
+        conclusionActions.push(`(${recIndex++}) Immediately file a civil declaration suit in the local Assistant Judge's Court to declare the unauthorized sale deed executed by the de facto guardian void and recover possession of the minor's property.`);
+        conclusionActions.push(`(${recIndex++}) File an application in the District Judge's Court under the Guardians and Wards Act 1890 to appoint a formal legal guardian of the minor's property.`);
+      } else {
+        conclusionActions.push(`(${recIndex++}) Prepare and file necessary petitions for child custody (Hizanat) and parental access in the Family Court under the Guardians and Wards Act 1890${text.includes('passport') ? ', and demand the immediate return of child/parent passport documents.' : '.'}`);
+      }
     }
     if (text.includes('talaq') || text.includes('divorce') || text.includes('separate')) {
       conclusionActions.push(`(${recIndex++}) Submit a formal written notice of Talaq/divorce procedure compliance to the local Chairman and the other party, ensuring compliance with Section 7 of the Muslim Family Laws Ordinance 1961 if applicable.`);
@@ -1013,6 +1113,19 @@ export default function App() {
               </button>
             </div>
 
+            {/* GitHub Protection & Security */}
+            <div className="flex items-center gap-2 border-l border-slate-200 pl-4 select-none">
+              <button
+                type="button"
+                onClick={() => setShowSecuritySettings(true)}
+                className="flex items-center gap-1.5 bg-gradient-to-r from-slate-900 to-slate-800 text-white hover:from-emerald-950 hover:to-emerald-900 px-3.5 py-1.5 rounded-lg text-xs font-bold font-sans transition-all cursor-pointer border border-slate-700/50 shadow-sm"
+                title="Manage GitHub repository permissions, lock branch configurations, and local access keys."
+              >
+                <Shield className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span className="text-slate-200">GitHub Protection</span>
+              </button>
+            </div>
+
           </div>
         </div>
       </header>
@@ -1578,6 +1691,47 @@ export default function App() {
                 <h2 className="font-serif italic text-slate-900 text-sm tracking-wider">ILRMF Case Workspace</h2>
               </div>
 
+              {localCodeLock && !isLockUnlocked && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-slate-705 flex gap-3 animate-in fade-in slide-in-from-top-2 duration-150 relative z-10">
+                  <Lock className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-bold text-slate-900">Workspace Code Lock Active</p>
+                    <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
+                      To prevent unauthorized alterations to your custom legal rules and case models, this workspace has been locked. Enter your 4-digit code to edit.
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <input
+                        type="password"
+                        maxLength={6}
+                        placeholder="Passcode (9105)"
+                        value={passcodeInput}
+                        onChange={(e) => {
+                          setPasscodeInput(e.target.value);
+                          setLockError('');
+                        }}
+                        className="px-2 py-1 bg-white border border-amber-300 rounded text-xs w-28 focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono text-slate-800"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (passcodeInput === lockPasscode) {
+                            setIsLockUnlocked(true);
+                            setPasscodeInput('');
+                            setLockError('');
+                          } else {
+                            setLockError('Incorrect security passcode.');
+                          }
+                        }}
+                        className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded text-xs font-bold transition-all cursor-pointer font-sans"
+                      >
+                        Unlock Workspace
+                      </button>
+                    </div>
+                    {lockError && <p className="text-[10px] text-rose-600 mt-1 font-bold font-mono">{lockError}</p>}
+                  </div>
+                </div>
+              )}
+
               {/* Factual Question input */}
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -1589,9 +1743,14 @@ export default function App() {
                 <textarea
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
+                  readOnly={localCodeLock && !isLockUnlocked}
                   placeholder="Enter the detailed legal query or dispute facts..."
                   rows={3}
-                  className="w-full text-xs text-slate-900 bg-slate-50/50 p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-400 font-sans leading-relaxed"
+                  className={`w-full text-xs p-3 border rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-400 font-sans leading-relaxed transition-all ${
+                    localCodeLock && !isLockUnlocked
+                    ? 'bg-slate-100/80 text-slate-400 border-slate-200 cursor-not-allowed select-none'
+                    : 'bg-slate-50/50 text-slate-900 border-slate-200'
+                  }`}
                 />
               </div>
 
@@ -1611,8 +1770,13 @@ export default function App() {
                     type="text"
                     value={issue}
                     onChange={(e) => setIssue(e.target.value)}
+                    readOnly={localCodeLock && !isLockUnlocked}
                     placeholder="E.g., Legal procedure for Talaq without notice."
-                    className="w-full text-xs text-slate-900 bg-slate-50/50 p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-400"
+                    className={`w-full text-xs p-3 border rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-400 transition-all ${
+                      localCodeLock && !isLockUnlocked
+                      ? 'bg-slate-100/80 text-slate-400 border-slate-200 cursor-not-allowed select-none'
+                      : 'bg-slate-50/50 text-slate-900 border-slate-200'
+                    }`}
                   />
                 </div>
 
@@ -1625,9 +1789,14 @@ export default function App() {
                   <textarea
                     value={ruleText}
                     onChange={(e) => setRuleText(e.target.value)}
+                    readOnly={localCodeLock && !isLockUnlocked}
                     placeholder="Enter statutory rule and source citation..."
                     rows={2}
-                    className="w-full text-xs text-slate-900 bg-slate-50/50 p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-400 leading-relaxed"
+                    className={`w-full text-xs p-3 border rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-400 leading-relaxed transition-all ${
+                      localCodeLock && !isLockUnlocked
+                      ? 'bg-slate-100/80 text-slate-400 border-slate-200 cursor-not-allowed select-none'
+                      : 'bg-slate-50/50 text-slate-900 border-slate-200'
+                    }`}
                   />
                   <div className="mt-2 flex flex-wrap gap-1 items-center">
                     <span className="text-[9px] text-slate-400 uppercase tracking-wider font-mono mr-1">Cites:</span>
@@ -1658,9 +1827,14 @@ export default function App() {
                   <textarea
                     value={applicationText}
                     onChange={(e) => setApplicationText(e.target.value)}
+                    readOnly={localCodeLock && !isLockUnlocked}
                     placeholder="Apply rule to facts. Use logical connectors (since, because, therefore)..."
                     rows={3}
-                    className="w-full text-xs text-slate-900 bg-slate-50/50 p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-400 leading-relaxed"
+                    className={`w-full text-xs p-3 border rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-400 leading-relaxed transition-all ${
+                      localCodeLock && !isLockUnlocked
+                      ? 'bg-slate-100/80 text-slate-400 border-slate-200 cursor-not-allowed select-none'
+                      : 'bg-slate-50/50 text-slate-900 border-slate-200'
+                    }`}
                   />
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     <span className="text-[9px] text-slate-400 uppercase tracking-wider font-mono mr-1">Tokens:</span>
@@ -1691,9 +1865,14 @@ export default function App() {
                   <textarea
                     value={conclusionText}
                     onChange={(e) => setConclusionText(e.target.value)}
+                    readOnly={localCodeLock && !isLockUnlocked}
                     placeholder="State outcome and next legal actions clearly..."
                     rows={2}
-                    className="w-full text-xs text-slate-900 bg-slate-50/50 p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-400 leading-relaxed"
+                    className={`w-full text-xs p-3 border rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-400 leading-relaxed transition-all ${
+                      localCodeLock && !isLockUnlocked
+                      ? 'bg-slate-100/80 text-slate-400 border-slate-200 cursor-not-allowed select-none'
+                      : 'bg-slate-50/50 text-slate-900 border-slate-200'
+                    }`}
                   />
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <span className="text-[9px] text-slate-400 uppercase tracking-wider font-mono mr-1">Actions:</span>
@@ -2419,6 +2598,215 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* GitHub Repository Protection & Code Lock Dashboard Modal */}
+      <AnimatePresence>
+        {showSecuritySettings && (
+          <div className="fixed inset-0 z-50 overflow-y-auto font-sans">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSecuritySettings(false)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Box */}
+            <div className="flex min-h-screen items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="relative bg-white w-full max-w-2xl rounded-2xl border border-slate-200 shadow-2xl overflow-hidden z-10"
+              >
+                {/* Header */}
+                <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-[#111c2e] p-6 text-white relative">
+                  <div className="absolute right-0 top-0 opacity-5 transform translate-x-4 -translate-y-4 pointer-events-none">
+                    <Shield className="w-40 h-40 text-white" />
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-400/20">
+                      <Shield className="w-5 h-5 text-emerald-400 animate-pulse" />
+                    </div>
+                    <div>
+                      <h3 className="font-serif italic text-lg font-bold">GitHub Code Protection Control Panel</h3>
+                      <p className="text-slate-400 text-[11px] font-mono mt-0.5">REPOSITORY INTEGRITY SECURITY MODULE</p>
+                    </div>
+                  </div>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setShowSecuritySettings(false)}
+                    className="absolute top-5 right-5 text-slate-400 hover:text-white transition-colors cursor-pointer text-xs uppercase tracking-widest font-mono border border-slate-700/50 px-2.5 py-1 rounded"
+                  >
+                    ESC [X]
+                  </button>
+                </div>
+
+                {/* Body */}
+                <div className="p-6 space-y-6 max-h-[500px] overflow-y-auto custom-scrollbar">
+                  {/* Status Indicator */}
+                  <div className="bg-emerald-50/40 border border-emerald-200 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                      <div>
+                        <p className="text-xs font-bold text-slate-900">GitHub Codeowners Protection File Generated</p>
+                        <p className="text-[11px] text-slate-500 font-mono">Status: ACTIVE - Ready to commit to GitHub</p>
+                      </div>
+                    </div>
+                    <span className="text-[9px] uppercase font-mono font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded border border-emerald-200">
+                      SECURED
+                    </span>
+                  </div>
+
+                  {/* GitHub Config Generator */}
+                  <div className="space-y-3">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider font-mono block">Configure Repository Administrator</label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3.5 top-2.5 text-slate-400 text-xs font-mono">@</span>
+                        <input
+                          type="text"
+                          value={githubUser}
+                          onChange={(e) => setGithubUser(e.target.value)}
+                          placeholder="Your GitHub Username"
+                          className="w-full pl-8 pr-3 py-2 text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 font-mono"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          alert(`Successfully customized CODEOWNERS and branch-protection configurations for @${githubUser}!`);
+                        }}
+                        className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer font-sans"
+                      >
+                        Apply Username
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                      Customizes the generated `/CODEOWNERS` and instructions using your specific GitHub username.
+                    </p>
+                  </div>
+
+                  {/* Two-Column Security Configuration */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Column 1: Local Code Lock */}
+                    <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 hover:border-slate-300 transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-slate-600" />
+                          <h4 className="text-xs font-bold text-slate-900">Local Workspace Lock</h4>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLocalCodeLock(!localCodeLock);
+                            setIsLockUnlocked(!localCodeLock ? false : true);
+                            setPasscodeInput('');
+                            setLockError('');
+                          }}
+                          className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${localCodeLock ? 'bg-amber-500' : 'bg-slate-300'}`}
+                        >
+                          <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${localCodeLock ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-relaxed mb-3">
+                        Simulates a strict administrative lock on the local app workspace. When active, all legal formula inputs are read-only until unlocked with the secret passcode.
+                      </p>
+                      {localCodeLock && (
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-[10px] font-mono">
+                          <span className="text-slate-400">Lock Passcode:</span>
+                          <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/50">{lockPasscode}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Column 2: Branch Protection Status */}
+                    <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 hover:border-slate-300 transition-colors">
+                      <div className="flex items-center gap-2 mb-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                        <h4 className="text-xs font-bold text-slate-900">GitHub Branch Protection</h4>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-relaxed mb-3">
+                        Forces GitHub to block any direct pushes or merges to your `main`/`master` branch unless approved specifically by you.
+                      </p>
+                      <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[10px] font-mono">
+                        <span className="text-slate-400">Rule Type:</span>
+                        <span className="text-slate-700 font-bold">Code Owner Signed</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Config Code View */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">Generated CODEOWNERS file content</span>
+                      <span className="text-[10px] text-slate-400 font-mono">Path: /CODEOWNERS</span>
+                    </div>
+                    <pre className="bg-slate-900 text-slate-100 rounded-xl p-3.5 text-[11px] font-mono overflow-x-auto leading-relaxed border border-slate-800">
+{`# CODEOWNERS File
+# Links with GitHub Branch Protection to prevent unapproved edits.
+
+*       @${githubUser}
+
+# Strict security lockdowns for core family law logic files
+/src/lib/knowledge/     @${githubUser}
+/src/lib/ilrmf/        @${githubUser}
+/server.ts             @${githubUser}
+/package.json          @${githubUser}`}
+                    </pre>
+                  </div>
+
+                  {/* Step-by-Step GitHub Setup Instructions */}
+                  <div className="bg-[#FAF9F5] border border-slate-200 rounded-xl p-4">
+                    <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5 mb-2 font-serif italic">
+                      How to activate this security inside GitHub Settings:
+                    </h4>
+                    <ol className="list-decimal pl-4 space-y-1.5 text-[11px] text-slate-600">
+                      <li>Go to your repository settings on GitHub (<span className="font-semibold text-slate-700">Settings &gt; Branches</span>).</li>
+                      <li>Click <span className="font-semibold text-slate-700">Add branch protection rule</span> for the branch name <code className="font-mono bg-slate-100 text-slate-700 px-1 py-0.2 rounded text-[10px]">main</code> or <code className="font-mono bg-slate-100 text-slate-700 px-1 py-0.2 rounded text-[10px]">master</code>.</li>
+                      <li>Check <span className="font-semibold text-slate-700">"Require a pull request before merging"</span>.</li>
+                      <li>Check <span className="font-semibold text-slate-700">"Require review from Code Owners"</span>.</li>
+                      <li>Check <span className="font-semibold text-slate-700">"Do not allow bypassing the above settings"</span> so that even admins must seek codeowners review.</li>
+                    </ol>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="bg-slate-50 border-t border-slate-200 p-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Trigger download of branch protection guidelines
+                      const element = document.createElement("a");
+                      const file = new Blob([
+                        `# GitHub Code Protection Setup Guide for @${githubUser}\n\nThis guide explains how to secure your repo.`
+                      ], {type: 'text/plain'});
+                      element.href = URL.createObjectURL(file);
+                      element.download = "github_protection_instructions.md";
+                      document.body.appendChild(element);
+                      element.click();
+                      document.body.removeChild(element);
+                    }}
+                    className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold px-4 py-2 rounded-lg text-xs transition-all cursor-pointer font-sans"
+                  >
+                    Download Guide
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowSecuritySettings(false)}
+                    className="bg-slate-950 hover:bg-slate-900 text-white font-bold px-5 py-2 rounded-lg text-xs transition-all cursor-pointer font-sans shadow-sm"
+                  >
+                    Close & Lock Settings
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

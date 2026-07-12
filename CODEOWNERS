@@ -1,0 +1,13 @@
+# CODEOWNERS File
+# This file defines the repository owners who must approve changes.
+# Any pull request changing files in the repository will require an approved review from these owners before it can be merged.
+
+# Set the default owner for all files to the repository administrator.
+# Only this user can authorize code changes or merge pull requests.
+*       @NAZMULBIJOY9105
+
+# Specific rules for critical security files (laws, rules, scoring engine)
+/src/lib/knowledge/     @NAZMULBIJOY9105
+/src/lib/ilrmf/        @NAZMULBIJOY9105
+/server.ts             @NAZMULBIJOY9105
+/package.json          @NAZMULBIJOY9105

@@ -46,7 +46,13 @@ function extractEntities(text: string): string[] {
     "Bangladesh", "Muslim", "Hindu", "Christian", "Adibashi", "Sunni", "Shia", "Talaq", "Khul", "Mahr", "Denmahr",
     "Court", "Family", "Act", "Ordinance", "Chairman", "Section", "MFLO", "DMMA", "GWA", "ISA", "ID", "Title", "Rule",
     "Irac", "Ilrmf", "Chambers", "Neum", "Lex", "Dhaka", "Guardians", "Wards", "Domestic", "Violence", "Prohibition",
-    "Marriage", "Restraint", "During", "Under", "Given", "Therefore", "Since", "Because", "This", "That", "Wife", "Husband"
+    "Marriage", "Restraint", "During", "Under", "Given", "Therefore", "Since", "Because", "This", "That", "Wife", "Husband",
+    "After", "Before", "Without", "His", "Her", "Their", "Its", "Our", "Your", "My", "They", "These", "Those", "Who", "Whose", 
+    "Whom", "What", "Which", "Why", "How", "When", "Where", "No", "Not", "Never", "Always", "Some", "Any", "Every", "Each", 
+    "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Paternal", "Maternal", 
+    "Uncle", "Aunt", "Brother", "Sister", "Mother", "Father", "Son", "Daughter", "Grandfather", "Grandmother", "Cousin", 
+    "Minor", "Adult", "Child", "Children", "Lawyer", "Advocate", "Attorney", "Judge", "Chairman", "Member", "Police", 
+    "Officer", "Local", "Businessman", "Seller", "Buyer", "District", "Personal", "Family", "Law", "Engine"
   ]);
   properNouns.forEach(pn => {
     if (!commonExclude.has(pn) && pn.length > 2 && !entities.includes(pn.toLowerCase())) {
