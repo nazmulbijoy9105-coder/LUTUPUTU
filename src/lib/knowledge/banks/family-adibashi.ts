@@ -3,6 +3,7 @@ import type { KnowledgeBank } from "@/shared/types";
 const rules = [
   { id: "fam-adi-001", title: "Adibashi Customary Marriage", source: "Customary Law / Hill District Council Acts", rule: "Adibashi marriages are governed by customary laws of respective tribes (Chakma, Marma, Garo etc.). No formal registration required under general law, but local council recognition applies.", certainty: "arguable" as const, religion: "adibashi" as const },
   { id: "fam-adi-002", title: "Adibashi Succession", source: "Customary Law", rule: "Property succession follows tribal customs. Generally, sons inherit primarily, but matrilineal tribes (like Garo) pass property through female line (daughter inherits).", certainty: "arguable" as const, religion: "adibashi" as const },
+  { id: "fam-adi-003", title: "Adibashi Customary Divorce", source: "Customary Law / Traditional Arbitration", rule: "Divorce is permitted under customary laws of specific tribes (Chakma, Marma), typically requiring mediation by local Headman, Karbari, or Circle Chief. Garo customs do not traditionally support divorce except in cases of proven extreme adultery/abandonment.", certainty: "arguable" as const, religion: "adibashi" as const },
 ];
 
 const qaBank = [

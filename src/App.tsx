@@ -132,7 +132,9 @@ export default function App() {
       'fam-talaq-001': /talaq|pronounce|divorce notice|iddat|90 days/i,
       'fam-khul-001': /khul|khula|divorce by wife/i,
       'fam-denmahr-001': /mahr|denmahr|dower|prompt|deferred/i,
-      'fam-custody-001': /custody|hizanat|guardian|guardianship|minor|son|daughter|child|children|underage|uncle|wards/i,
+      'fam-custody-001': /custody|hizanat|visitation|parental\s+access|custodial/i,
+      'fam-prop-guardianship-001': /guardian|guardianship|minor|uncle|property|land|sell|sold|transfer|alienat|wards/i,
+      'fam-muslim-succession-001': /inheritance|succession|heir|will|bequest|gift|hiba|estate|share|deceased|passed away/i,
       'fam-maintenance-001': /maintenance|nafaqa|separate maintenance|iddat maintenance|support money/i,
       'fam-polygamy-001': /polygamy|second marriage|second wife|plural marriage/i,
       'fam-dowry-001': /dowry|joutuk/i,
@@ -143,15 +145,17 @@ export default function App() {
       'fam-hindu-001': /hindu marriage|hindu divorce|divorce under hindu/i,
       'fam-hindu-002': /separation|separate residence|hindu wife/i,
       'fam-hindu-003': /adopt|adoption/i,
-      'fam-hindu-004': /succession|hindu succession|heir|daughter share|will/i,
+      'fam-hindu-004': /succession|inheritance|heir|daughter share|will|dayabhaga|widow share/i,
 
       // Christian
       'fam-chr-001': /christian divorce|divorce act 1869|adultery/i,
-      'fam-chr-002': /christian succession|succession act|isa 1925/i,
+      'fam-chr-002': /christian succession|succession act|isa 1925|will|bequest/i,
+      'fam-chr-003': /christian marriage|solemniz|church|minister|marriage act 1872/i,
 
       // Adibashi
       'fam-adi-001': /adibashi marriage|tribal customary|customary marriage/i,
-      'fam-adi-002': /adibashi succession|tribal succession|matrilineal/i
+      'fam-adi-002': /adibashi succession|tribal succession|matrilineal/i,
+      'fam-adi-003': /adibashi divorce|tribal divorce|customary divorce|headman|karbari/i
     };
 
     const stopwords = new Set([
@@ -188,9 +192,28 @@ export default function App() {
         matchedRuleIds.push('fam-dv-001');
       }
     }
-    if (/custody|child|son|daughter|prevent|meet|parental|visitation/i.test(text)) {
+    if (/custody|prevent|meet|parental|visitation/i.test(text)) {
       if (!matchedRuleIds.includes('fam-custody-001') && rulesOfReligion.some(r => r.id === 'fam-custody-001')) {
         matchedRuleIds.push('fam-custody-001');
+      }
+    }
+    if (/sell|sold|transfer|alienat|property|land/i.test(text) && /uncle|guardian|minor/i.test(text)) {
+      if (!matchedRuleIds.includes('fam-prop-guardianship-001') && rulesOfReligion.some(r => r.id === 'fam-prop-guardianship-001')) {
+        matchedRuleIds.push('fam-prop-guardianship-001');
+      }
+    }
+    if (/inheritance|succession|heir|share|deceased|passed away|estate/i.test(text)) {
+      if (detectedReligion === 'muslim' && !matchedRuleIds.includes('fam-muslim-succession-001') && rulesOfReligion.some(r => r.id === 'fam-muslim-succession-001')) {
+        matchedRuleIds.push('fam-muslim-succession-001');
+      }
+      if (detectedReligion === 'hindu' && !matchedRuleIds.includes('fam-hindu-004') && rulesOfReligion.some(r => r.id === 'fam-hindu-004')) {
+        matchedRuleIds.push('fam-hindu-004');
+      }
+      if (detectedReligion === 'christian' && !matchedRuleIds.includes('fam-chr-002') && rulesOfReligion.some(r => r.id === 'fam-chr-002')) {
+        matchedRuleIds.push('fam-chr-002');
+      }
+      if (detectedReligion === 'adibashi' && !matchedRuleIds.includes('fam-adi-002') && rulesOfReligion.some(r => r.id === 'fam-adi-002')) {
+        matchedRuleIds.push('fam-adi-002');
       }
     }
     if (/divorce|talaq|separation\b|dissolution\b|separate\s+(?:living|residence|house|home|maintenance)/i.test(text)) {
@@ -260,6 +283,9 @@ export default function App() {
     }
     if (/sell|sold|transfer|alienat|property|land/i.test(text)) {
       factDetails.push("unauthorized sale and alienation of minor's inherited property by a de facto guardian");
+    }
+    if (/inheritance|succession|heir|share|estate/i.test(text)) {
+      factDetails.push("distribution of deceased estate, legal heirs' entitlement, and succession rights");
     }
     
     if (factDetails.length === 0) {
@@ -357,6 +383,18 @@ export default function App() {
       if (rule.id === 'fam-custody-001' && /uncle|paternal|relative/i.test(text) && /sell|sold|transfer|alienat|property|land/i.test(text)) {
         ruleApp += ` In this specific scenario, a paternal uncle acts merely as a de facto guardian of the minor child. Under Muslim personal law and the Guardians and Wards Act 1890, a de facto guardian lacks any legal authority to alienate, transfer, or sell the immovable property of a minor without prior permission from the District Judge. Therefore, because the transaction was executed without court sanction and does not serve the minor's welfare, the sale of the agricultural land is legally void ab initio.`;
       }
+      if (rule.id === 'fam-prop-guardianship-001') {
+        ruleApp += ` In this specific case, the de facto guardian (Imran's paternal uncle) managed and unauthorizedly sold a plot of agricultural land to pay his personal debts. Since the transfer of the minor's property did not serve any absolute necessity or beneficial purpose for the minor, and was executed without mandatory judicial approval from the District Judge, the transaction violates the statutory limits of property guardianship. Therefore, because the sale deed is invalid under Muslim personal law, the minor is legally entitled to declare the sale null and void and recover complete possession of his property.`;
+      }
+      if (rule.id === 'fam-muslim-succession-001') {
+        ruleApp += ` In this specific case, because the estate distribution involves a deceased Muslim's property, Islamic Sharia principles under the Muslim Personal Law (Shariat) Application Act 1937 govern succession. Under these provisions, since the law specifies exact Quranic shares (including widow's 1/8th and the son/daughter 2:1 ratio), any unilateral exclusion of heirs or deprivation of female heirs' shares is void and legally unenforceable.`;
+      }
+      if (rule.id === 'fam-hindu-004') {
+        ruleApp += ` In this specific case, because the estate involves a deceased Hindu's property in Bangladesh, Dayabhaga personal law operates. Under this uncodified framework, since daughters do not inherit equally with sons and widows are restricted to a limited life interest, the partition of the joint estate must follow classic Dayabhaga principles as modified by the 1937 Act. Therefore, any attempt to demand equal absolute partition by daughters is legally invalid unless male heirs are entirely absent.`;
+      }
+      if (rule.id === 'fam-chr-002') {
+        ruleApp += ` In this specific case, because Christian succession is governed by the Succession Act 1925, the estate of the deceased must be distributed according to statutory fractions (1/3rd to widow and 2/3rd divided equally among children). Therefore, because the statutory code binds all parties deterministically, any non-compliant distribution creates actionable grounds to file an administration suit in the District Judge's Court.`;
+      }
       
       analysisParagraphs.push(ruleApp);
     });
@@ -383,6 +421,10 @@ export default function App() {
     }
     if (text.includes('maintenance') || text.includes('money') || text.includes('expense') || text.includes('support') || text.includes('fund') || text.includes('mahr')) {
       conclusionActions.push(`(${recIndex++}) Send a formal statutory legal notice to the opposite party demanding immediate separate maintenance and dower (mahr) recovery under the Family Courts Ordinance 1985 Section 9, and seek recovery of any mutual funds fraudulently misappropriated.`);
+    }
+    if (text.includes('inheritance') || text.includes('succession') || text.includes('heir') || text.includes('estate') || text.includes('will') || text.includes('share') || text.includes('bequest') || text.includes('gift')) {
+      conclusionActions.push(`(${recIndex++}) File a partition suit in the appropriate Civil Court to seek declaration of share and physical partition of the deceased's estate among legal heirs.`);
+      conclusionActions.push(`(${recIndex++}) Obtain a Succession Certificate from the District Judge court under the Succession Act 1925 for the administration and recovery of the deceased's bank accounts, securities, or other movable debts.`);
     }
     
     // Fallback if no specific actions triggered
