@@ -170,7 +170,7 @@ export default function App() {
   const handleAdminVerify = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const normalized = adminPasswordInput.trim().toLowerCase();
-    if (normalized === 'lutuputu' || normalized === 'admin' || normalized === 'admin123') {
+    if (normalized === 'neumlex' || normalized === 'admin' || normalized === 'admin123') {
       setIsAdminMode(true);
       setShowAdminModal(false);
       setAdminPasswordInput('');
@@ -292,7 +292,7 @@ export default function App() {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       doc.setTextColor(148, 163, 184); // slate-400
-      doc.text('LUTUPUTU.COM | BANGLADESH PERSONAL FAMILY LAW ENGINE', margin, 10);
+      doc.text('NEUMLEX.COM | BANGLADESH PERSONAL FAMILY LAW ENGINE', margin, 10);
       
       let headerTitle = 'DETERMINISTIC LEGAL AUDIT REPORT';
       if (type === 'irac') {
@@ -602,11 +602,11 @@ export default function App() {
     y += 5;
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(15, 23, 42); // slate-900
-    doc.text('Proprietary Framework Owned & Authorized by Md. Nazmul Islam, Advocate, Supreme Court of Bangladesh.', margin, y);
+    doc.text('Proprietary Framework Owned & Authorized by Neum Lex Counsel, Dhaka, Bangladesh.', margin, y);
     y += 4;
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(148, 163, 184);
-    doc.text('© 2026 LUTUPUTU.COM. All rights of reproduction, software architecture, and deterministic code execution layouts are fully reserved.', margin, y);
+    doc.text('© 2026 NEUMLEX.COM. All rights of reproduction, software architecture, and deterministic code execution layouts are fully reserved.', margin, y);
  
     // Save/Download the PDF
     const safeName = `${selectedReligion}-${type}-audit-report.pdf`.toLowerCase();
@@ -626,13 +626,13 @@ export default function App() {
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-bold text-lg tracking-[0.15em] text-slate-900 font-serif uppercase">NAZMULCHAMBERS.COM</span>
+                <span className="font-bold text-lg tracking-[0.15em] text-slate-900 font-serif uppercase">NEUMLEX.COM</span>
                 <span className="bg-amber-50 text-amber-800 border border-amber-200/60 text-[9px] font-bold font-mono px-2 py-0.5 rounded uppercase tracking-wider">
-                  Supreme Court Chambers
+                  Neum Lex Counsel
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 mt-0.5 font-sans leading-tight">
-                Deterministic Family Law System • Directed by <span className="font-semibold text-slate-700">Md. Nazmul Islam Advocate</span>, Supreme Court of Bangladesh
+                Deterministic Family Law System • Directed by <span className="font-semibold text-slate-700">Neum Lex Counsel</span>, Bangladesh
               </p>
             </div>
           </div>
@@ -785,7 +785,7 @@ export default function App() {
                 Rule Audit: <span className="capitalize">{selectedReligion}</span> Family Laws
               </h2>
               <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-6 max-w-2xl">
-                A professional, deterministic verification workspace for family matters in Bangladesh. Under the strict authority of Advocate Md. Nazmul Islam, this engine matches factual briefs with the codified Muslim Family Laws Ordinance 1961, Hindu Separation statutes, and Christian Marriage Acts, outputting audited Issue-Law-Reasoning-Conclusion (ILRMF) briefs with zero probabilistic hazard.
+                A professional, deterministic verification workspace for family matters in Bangladesh. Under the authority of Neum Lex Counsel, this engine matches factual briefs with the codified Muslim Family Laws Ordinance 1961, Hindu Separation statutes, and Christian Marriage Acts, outputting audited Issue-Law-Reasoning-Conclusion (ILRMF) briefs with zero probabilistic hazard.
               </p>
               <div className="flex flex-wrap gap-2 text-[10px] font-mono">
                 <span className="bg-slate-900/60 text-amber-300 px-2.5 py-1 rounded border border-slate-800/80">MFLO 1961 Compliance Check</span>
@@ -817,8 +817,8 @@ export default function App() {
                 </div>
                 <div className="text-left">
                   <span className="text-[9px] uppercase tracking-widest text-amber-400 font-mono font-bold block leading-none mb-1">Authenticated Signature</span>
-                  <p className="text-sm font-serif italic text-slate-100 font-bold leading-tight">Md. Nazmul Islam Chambers</p>
-                  <p className="text-[10px] text-amber-300/80 font-mono">Advocate, Supreme Court of BD</p>
+                  <p className="text-sm font-serif italic text-slate-100 font-bold leading-tight">Neum Lex Counsel</p>
+                  <p className="text-[10px] text-amber-300/80 font-mono">Legal Counselors & Advocates</p>
                 </div>
               </div>
             )}
@@ -1871,8 +1871,8 @@ export default function App() {
                   <div className="absolute inset-0 flex items-center justify-center opacity-[0.012] pointer-events-none select-none">
                     <div className="text-center font-serif">
                       <p className="text-9xl font-black tracking-widest">⚖</p>
-                      <p className="text-4xl font-black tracking-[0.25em] mt-6">MD. NAZMUL ISLAM</p>
-                      <p className="text-2xl font-bold uppercase tracking-[0.35em] mt-2">Advocate, Supreme Court of BD</p>
+                      <p className="text-4xl font-black tracking-[0.25em] mt-6">NEUM LEX COUNSEL</p>
+                      <p className="text-2xl font-bold uppercase tracking-[0.35em] mt-2">Legal Counselors & Advocates</p>
                     </div>
                   </div>
 
@@ -1886,7 +1886,7 @@ export default function App() {
                         Chambers Consultation & Decision Brief
                       </h4>
                       <p className="text-xs text-slate-500 mt-1 leading-normal font-sans">
-                        Chambers of <span className="font-semibold text-slate-700">Md. Nazmul Islam</span>, Supreme Court Advocate, Dhaka, Bangladesh.
+                        Neum Lex Counsel, Legal Counselors & Advocates, Dhaka, Bangladesh.
                       </p>
                     </div>
                     
@@ -2008,8 +2008,8 @@ export default function App() {
                       <li className="flex gap-3 items-start">
                         <span className="w-5 h-5 rounded-full bg-slate-900 text-white font-mono text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">4</span>
                         <div>
-                          <p className="font-bold text-slate-900">Retain Supreme Court Representation</p>
-                          <p className="text-slate-500 leading-relaxed mt-0.5">Contact the chambers of Advocate Md. Nazmul Islam for active litigation drafting, temporary alimony suits, and judicial family court filing.</p>
+                          <p className="font-bold text-slate-900">Retain Professional Representation</p>
+                          <p className="text-slate-500 leading-relaxed mt-0.5">Contact Neum Lex Counsel for active litigation drafting, temporary alimony suits, and judicial family court filing.</p>
                         </div>
                       </li>
                     </ul>
@@ -2077,13 +2077,13 @@ export default function App() {
             </div>
           </div>
           <div className="text-center pt-6 border-t border-slate-100">
-            <p className="text-xs text-slate-400 tracking-widest uppercase font-bold mb-2">NAZMULCHAMBERS.COM</p>
+            <p className="text-xs text-slate-400 tracking-widest uppercase font-bold mb-2">NEUMLEX.COM</p>
             <p className="text-xs text-slate-600 max-w-xl mx-auto leading-relaxed">
               Deterministic legal rule engine, metrics audits, and personal family law codifications for Bangladesh. Built strictly under 
               reproducible rule frameworks without any probabilistic generative experiments.
             </p>
             <p className="text-[10px] text-slate-400 mt-4 font-mono leading-relaxed">
-              © 2026 Nazmul Islam Chambers. All Rights Reserved. All intellectual property, rights, and algorithms are proprietary and owned by <span className="font-semibold text-slate-500">Md. Nazmul Islam</span>, Advocate, Supreme Court of Bangladesh.
+              © 2026 Neum Lex Counsel. All Rights Reserved. All intellectual property, rights, and algorithms are proprietary and owned by <span className="font-semibold text-slate-500">Neum Lex Counsel</span>.
             </p>
           </div>
         </div>

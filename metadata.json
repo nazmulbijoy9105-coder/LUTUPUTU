@@ -1,6 +1,6 @@
 {
-  "name": "Nazmul Islam Chambers - Legal Rule Engine",
-  "description": "Professional deterministic legal rule engine for personal family laws in Bangladesh, supervised by Md. Nazmul Islam, Advocate, Supreme Court of Bangladesh.",
+  "name": "Neum Lex Counsel - Legal Rule Engine",
+  "description": "Professional deterministic legal rule engine for personal family laws in Bangladesh, under Neum Lex Counsel.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
