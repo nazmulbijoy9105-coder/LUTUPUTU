@@ -76,11 +76,14 @@ Task: Structure a formal legal response conforming strictly to the Deterministic
 
 Requirements:
 1. 'religion': Must be exactly one of 'muslim', 'hindu', 'christian', or 'adibashi'.
-2. 'question': Synthesize a clear, direct, and formal legal question based on the situation. Set this to the client's actual original domestic situation text so we preserve all specific allegations, or a highly detailed description of the facts including specific names like Anika Tabassum, Mr. Ismail, Muammar, Arad, and Md. Jasim Uddin, if present in the situation text.
-3. 'issue': Formulate a formal legal issue statement. To ensure it passes the deterministic facts-check audit, it MUST explicitly contain multiple legal entities mentioned in the text (e.g. at least two or three of the following exact lowercase words: 'husband', 'wife', 'child', 'talaq', 'agreement', 'custody', 'maintenance', 'mahr'). It should follow a formal standard: "Whether the dispute between the husband (Muammar) and the wife (Anika Tabassum) regarding child custody of their minor child Arad, separate maintenance demands, and coerced signing of agreements under threats is legally actionable..."
-4. 'rule': Provide the applicable statutory rule text, section, and legal citations. Keep it professional and compile the mapped statutory codes. Make sure to map all relevant rule IDs, especially 'fam-dv-001' (Domestic Violence Act 2010) if there are threats, coercion, harassment, or physical intrusion.
-5. 'application': Apply the legal rule to the client's domestic situation facts in detail. You MUST construct a solid, multi-paragraph logical argument and actively use logical connectors like 'since', 'because', 'therefore', 'under', and 'given that' to ensure a high logic audit score. Mention the specific facts such as unlawful passport possession/retention, prevented visitation, residential trespass/wardrobe looting, and misappropriated mutual bank funds.
-6. 'conclusion': Formulate the final conclusion, the outcome, and practical, actionable next legal actions. The conclusion MUST be highly detailed (at least 100 characters) and MUST contain numbered steps starting with (1), (2), and optional (3), and MUST include specific auxiliary action verbs like 'must', 'should', or 'file' (e.g., "The client should file for protection orders under the Domestic Violence Act 2010...").
+2. 'question': Set this EXACTLY to the client's actual original unmodified domestic situation text: "${domesticSituation.replace(/"/g, '\\"')}".
+3. 'issue': Formulate a formal legal issue statement. To ensure it passes the deterministic facts-check audit:
+   - It MUST refer only to the actual names of the parties present in the client situation (e.g., if the text mentions Farhana and Monir, use Farhana and Monir. Do NOT invent other names like Muammar or Anika Tabassum). If no specific names are mentioned, refer to them generically by their relationship roles (husband, wife).
+   - It MUST explicitly contain at least two or three of the following exact lowercase words that are relevant to the case: 'husband', 'wife', 'child', 'talaq', 'agreement', 'custody', 'maintenance', 'mahr'.
+   - Example: "Whether the dispute between the husband (Monir) and the wife (Farhana) regarding child custody and wife maintenance is legally actionable..."
+4. 'rule': Provide the applicable statutory rule text, section, and legal citations. Keep it professional and compile the mapped statutory codes.
+5. 'application': Apply the legal rule to the client's ACTUAL domestic situation facts in detail. You MUST construct a solid, multi-paragraph logical argument and actively use logical connectors like 'since', 'because', 'therefore', 'under', and 'given that' to ensure a high logic audit score. Mention ONLY facts that are actually present in the input text (e.g. if physical abuse or shouting is mentioned, apply it; do NOT mention unrelated facts like passport retention or wardrobe looting unless they are explicitly in the text).
+6. 'conclusion': Formulate the final conclusion, the outcome, and practical, actionable next legal actions. The conclusion MUST be highly detailed (at least 150 characters) and MUST contain numbered steps starting with (1), (2), and optional (3), and MUST include specific auxiliary action verbs like 'must', 'should', or 'file' (e.g., "The client should file for protection orders under the Domestic Violence Act 2010...", "(2) The husband must...").
 7. 'relatedRules': Extract the exact matching rule IDs from the provided database list that apply to this situation (e.g., ['fam-talaq-001', 'fam-custody-001', 'fam-dv-001']). Do not invent any new IDs.
 8. 'escalate': Determine if this domestic situation involves immediate danger, criminal acts, coercion, threats, custody withholding, or severe legal urgency requiring professional advocate/court escalation (true/false).
 9. 'escalateReason': Specify a clear, professional reason for immediate professional legal/court escalation if 'escalate' is true. Leave empty if false.
@@ -101,28 +104,28 @@ Return a JSON response matching the required schema. Ensure the response is high
               },
               question: {
                 type: Type.STRING,
-                description: "A synthesized factual legal question describing the core dispute."
+                description: "A synthesized factual legal question describing the core dispute. It MUST be set exactly to the client's original unmodified domestic situation text."
               },
               issue: {
                 type: Type.STRING,
-                description: "A formal legal issue statement."
+                description: "A formal legal issue statement. To pass audit verification, it MUST explicitly contain the names of the parties involved (if mentioned in the situation text, e.g. Farhana and Monir) and at least two lowercase family law entities/roles mentioned in the situation (such as 'husband', 'wife', 'child', 'talaq', 'custody', 'maintenance', 'mahr', etc.)."
               },
               rule: {
                 type: Type.STRING,
-                description: "The applicable statutory rule, including section and citation details."
+                description: "The applicable statutory rule text. It MUST explicitly quote/contain the exact official source name and year of the primary matched rules from the database list (e.g., 'Muslim Family Laws Ordinance 1961' or 'Guardians and Wards Act 1890') to ensure correct citation verification."
               },
               application: {
                 type: Type.STRING,
-                description: "A detailed logical application applying the rule to the factual situation using logical connectors (since, because, therefore)."
+                description: "A detailed logical application of the rules to the client's situation. It MUST be a solid multi-paragraph argument, at least 150 characters long, and MUST actively use logical connectors like 'since', 'because', 'therefore', 'under', 'if', and 'given that' to construct a complete reasoning chain."
               },
               conclusion: {
                 type: Type.STRING,
-                description: "The final conclusion and recommended next legal actions."
+                description: "The final conclusion and recommended next legal actions. It MUST be at least 150 characters long, contain numbered steps starting with (1), (2) describing actions the parties should take, and MUST use auxiliary verbs like 'must', 'should', 'file', or 'consult'."
               },
               relatedRules: {
                 type: Type.ARRAY,
                 items: { type: Type.STRING },
-                description: "The list of exact rule IDs matching the ones in our database."
+                description: "The list of exact rule IDs from our database list that apply to this situation (e.g., ['fam-talaq-001', 'fam-custody-001']). Do NOT invent new IDs."
               },
               escalate: {
                 type: Type.BOOLEAN,

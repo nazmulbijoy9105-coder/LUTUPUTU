@@ -38,10 +38,26 @@ export function checkFacts(entry: QAEntry): FactCheckResult {
 
 function extractEntities(text: string): string[] {
   const entities: string[] = [];
+  
+  // Extract proper nouns as entities (names)
+  const properNouns = text.match(/[A-Z][a-z]+/g) || [];
+  const commonExclude = new Set([
+    "The", "And", "In", "On", "At", "By", "For", "To", "With", "About", "Against", "From", "But", "He", "She", "They",
+    "Bangladesh", "Muslim", "Hindu", "Christian", "Adibashi", "Sunni", "Shia", "Talaq", "Khul", "Mahr", "Denmahr",
+    "Court", "Family", "Act", "Ordinance", "Chairman", "Section", "MFLO", "DMMA", "GWA", "ISA", "ID", "Title", "Rule",
+    "Irac", "Ilrmf", "Chambers", "Neum", "Lex", "Dhaka", "Guardians", "Wards", "Domestic", "Violence", "Prohibition",
+    "Marriage", "Restraint", "During", "Under", "Given", "Therefore", "Since", "Because", "This", "That", "Wife", "Husband"
+  ]);
+  properNouns.forEach(pn => {
+    if (!commonExclude.has(pn) && pn.length > 2 && !entities.includes(pn.toLowerCase())) {
+      entities.push(pn.toLowerCase());
+    }
+  });
+
   const patterns = [
-    /(?:land|property|house|apartment|mahr|denmahr|talaq|khul)/gi,
-    /(?:seller|buyer|landlord|tenant|neighbor|owner|husband|wife|child|children)/gi,
-    /(?:deed|khatian|mutation|agreement|contract|kabinanama)/gi,
+    /(?:land|property|house|apartment|mahr|denmahr|talaq|khul|divorce|marriage|married|custody|guardianship|maintenance|alimony|abuse|violence|protection)/gi,
+    /(?:seller|buyer|landlord|tenant|neighbor|owner|husband|wife|child|children|son|daughter|father|mother)/gi,
+    /(?:deed|khatian|mutation|agreement|contract|kabinanama|passport|notice)/gi,
     /\d+\s*(?:years?|months?|days?)/gi
   ];
   patterns.forEach(p => {
